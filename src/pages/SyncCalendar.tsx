@@ -21,14 +21,16 @@ const SyncCalendar = () => {
                     token: accessToken
                 });
                 await refreshProfile();
-                navigate('/dashboard');
+                navigate('/dashboard/schedule');
             } else {
                 alert("Failed to get Google Calendar access. Please make sure you grant the requested permissions.");
             }
-        } catch (err) {
+        } catch (err: any) {
             console.error(err);
-            alert("An error occurred during calendar sync.");
+            const message = err.response?.data?.detail || err.message || "An error occurred during calendar sync.";
+            alert(`Sync Failed: ${message}`);
         } finally {
+
             setLoading(false);
         }
     };

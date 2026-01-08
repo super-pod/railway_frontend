@@ -8,6 +8,8 @@ import PodCreate from './pages/PodCreate';
 import PodDetail from './pages/PodDetail';
 import SyncCalendar from './pages/SyncCalendar';
 import SetupOrca from './pages/SetupOrca';
+import Schedule from './pages/Schedule';
+
 
 import Privacy from './pages/Privacy';
 import Terms from './pages/Terms';
@@ -22,6 +24,8 @@ function App() {
                 <Route element={<ProtectedRoute />}>
                     <Route element={<Layout />}>
                         <Route path="/dashboard" element={<Dashboard />} />
+                        <Route path="/dashboard/schedule" element={<Schedule />} />
+
                         <Route path="/pods/create" element={<PodCreate />} />
                         <Route path="/pods/:podId" element={<PodDetail />} />
                         <Route path="/sync-calendar" element={<SyncCalendar />} />

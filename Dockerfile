@@ -12,4 +12,4 @@ WORKDIR /app
 RUN npm install -g serve
 COPY --from=builder /app/dist ./dist
 # Railway provides the PORT environment variable
-CMD echo "Starting server on port $PORT..." && serve -s dist -l $PORT
+CMD echo "Starting server on port $PORT..." && serve -s dist -l 0.0.0.0:$PORT

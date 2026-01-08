@@ -1,16 +1,26 @@
-import React from 'react';
-import { auth, signInWithGoogle } from '../lib/firebaseClient';
+import React, { useEffect } from 'react';
+import { signInWithGoogle } from '../lib/firebaseClient';
 import { useNavigate } from 'react-router-dom';
-import apiClient from '../lib/apiClient';
+import { useAuth } from '../context/AuthContext';
 
 const Login = () => {
     const navigate = useNavigate();
+    const { user, profile } = useAuth();
+
+    useEffect(() => {
+        if (user && profile) {
+            if (profile.is_calendar_synced) {
+                navigate('/dashboard');
+            } else {
+                navigate('/sync-calendar');
+            }
+        }
+    }, [user, profile, navigate]);
 
     const handleLogin = async () => {
         try {
             await signInWithGoogle();
-            await apiClient.post('/auth/me');
-            navigate('/dashboard');
+            // The useEffect will handle navigation once state updates
         } catch (error) {
             console.error("Login failed", error);
         }

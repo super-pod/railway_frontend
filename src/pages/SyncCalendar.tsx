@@ -2,10 +2,12 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import apiClient from '../lib/apiClient';
 import { Calendar } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 const SyncCalendar = () => {
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
+    const { refreshProfile } = useAuth();
 
     const handleSync = async () => {
         setLoading(true);
@@ -15,6 +17,7 @@ const SyncCalendar = () => {
                 provider: 'google',
                 token: 'stub-token-' + Math.random().toString(36).substring(7)
             });
+            await refreshProfile();
             navigate('/dashboard');
         } catch (err) {
             console.error(err);

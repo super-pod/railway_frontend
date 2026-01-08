@@ -1,22 +1,28 @@
-import React, { useEffect, useState } from 'react';
-import { Navigate, Outlet } from 'react-router-dom';
-import { auth } from '../lib/firebaseClient';
-import { onAuthStateChanged } from 'firebase/auth';
+import React from 'react';
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 const ProtectedRoute = () => {
-    const [loading, setLoading] = useState(true);
-    const [user, setUser] = useState<any>(null);
+    const { user, profile, loading } = useAuth();
+    const location = useLocation();
 
-    useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, (u) => {
-            setUser(u);
-            setLoading(false);
-        });
-        return () => unsubscribe();
-    }, []);
+    if (loading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-slate-900">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+            </div>
+        );
+    }
 
-    if (loading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
-    if (!user) return <Navigate to="/login" replace />;
+    if (!user) {
+        return <Navigate to="/login" state={{ from: location }} replace />;
+    }
+
+    // Critical Step: Check if calendar is synced
+    // If not synced, and not already on the sync-calendar page, redirect to it
+    if (profile && !profile.is_calendar_synced && location.pathname !== '/sync-calendar') {
+        return <Navigate to="/sync-calendar" replace />;
+    }
 
     return <Outlet />;
 };

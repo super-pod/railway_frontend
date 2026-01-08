@@ -9,11 +9,16 @@ import PodDetail from './pages/PodDetail';
 import SyncCalendar from './pages/SyncCalendar';
 import SetupOrca from './pages/SetupOrca';
 
+import Privacy from './pages/Privacy';
+import Terms from './pages/Terms';
+
 function App() {
     return (
         <BrowserRouter>
             <Routes>
                 <Route path="/login" element={<Login />} />
+                <Route path="/privacy" element={<Privacy />} />
+                <Route path="/terms" element={<Terms />} />
                 <Route element={<ProtectedRoute />}>
                     <Route element={<Layout />}>
                         <Route path="/dashboard" element={<Dashboard />} />

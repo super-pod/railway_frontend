@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import apiClient from '../lib/apiClient';
 import { Calendar } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { signInWithGoogle } from '../lib/firebaseClient';
 
 const SyncCalendar = () => {
     const [loading, setLoading] = useState(false);
@@ -12,15 +13,21 @@ const SyncCalendar = () => {
     const handleSync = async () => {
         setLoading(true);
         try {
-            // Stub: in reality, this would initiate OAuth flow
-            await apiClient.post('/calendar/sync', {
-                provider: 'google',
-                token: 'stub-token-' + Math.random().toString(36).substring(7)
-            });
-            await refreshProfile();
-            navigate('/dashboard');
+            const { user, accessToken } = await signInWithGoogle();
+
+            if (accessToken) {
+                await apiClient.post('/calendar/sync', {
+                    provider: 'google',
+                    token: accessToken
+                });
+                await refreshProfile();
+                navigate('/dashboard');
+            } else {
+                alert("Failed to get Google Calendar access. Please make sure you grant the requested permissions.");
+            }
         } catch (err) {
             console.error(err);
+            alert("An error occurred during calendar sync.");
         } finally {
             setLoading(false);
         }

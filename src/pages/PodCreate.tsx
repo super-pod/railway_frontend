@@ -13,13 +13,16 @@ const PodCreate = () => {
     const [description, setDescription] = useState('');
     const [podType, setPodType] = useState<'Meeting' | 'Generic'>('Generic');
 
-    // Meeting-specific fields
-    const [location, setLocation] = useState('');
-    const [duration, setDuration] = useState('');
-    const [startDateTime, setStartDateTime] = useState('');
+    const [meetingGoalInstructions, setMeetingGoalInstructions] = useState({
+        location: '',
+        duration: '',
+        startDateTime: ''
+    });
 
     // Generic pod goals
     const [goals, setGoals] = useState<Goal[]>([]);
+    const [inviteEmails, setInviteEmails] = useState<string[]>([]);
+    const [inviteEmailInput, setInviteEmailInput] = useState('');
 
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
@@ -40,6 +43,18 @@ const PodCreate = () => {
         setGoals(updatedGoals);
     };
 
+    const addInviteEmail = () => {
+        const trimmed = inviteEmailInput.trim();
+        if (!trimmed) {
+            return;
+        }
+        const exists = inviteEmails.some(email => email.toLowerCase() === trimmed.toLowerCase());
+        if (!exists) {
+            setInviteEmails([...inviteEmails, trimmed]);
+        }
+        setInviteEmailInput('');
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
@@ -48,29 +63,25 @@ const PodCreate = () => {
             const payload: any = {
                 description,
                 pod_type: podType,
+                invite_emails: inviteEmails
             };
 
             if (podType === 'Meeting') {
-                payload.location = location;
-                payload.duration = parseInt(duration);
-                payload.start_datetime = new Date(startDateTime).toISOString();
-
-                // Add fixed meeting goals
                 payload.goals = [
                     {
-                        name: 'Meeting Preparation',
-                        type: 'preparation',
-                        instructions: 'Prepare agenda and materials for the meeting'
+                        name: 'Location',
+                        type: 'location',
+                        instructions: meetingGoalInstructions.location.trim()
                     },
                     {
-                        name: 'Meeting Execution',
-                        type: 'execution',
-                        instructions: 'Conduct the meeting as scheduled'
+                        name: 'Duration',
+                        type: 'duration',
+                        instructions: meetingGoalInstructions.duration.trim()
                     },
                     {
-                        name: 'Follow-up Actions',
-                        type: 'follow-up',
-                        instructions: 'Complete action items from the meeting'
+                        name: 'Start DateTime',
+                        type: 'start_datetime',
+                        instructions: meetingGoalInstructions.startDateTime.trim()
                     }
                 ];
             } else {
@@ -78,8 +89,13 @@ const PodCreate = () => {
                 payload.goals = goals.filter(g => g.name && g.type && g.instructions);
             }
 
-            await apiClient.post('/pods', payload);
-            navigate('/dashboard');
+            const res = await apiClient.post('/pods', payload);
+            const newPod = res.data;
+            if (newPod?.id) {
+                navigate(`/pods/${newPod.id}`);
+            } else {
+                navigate('/dashboard');
+            }
         } catch (err) {
             console.error(err);
         } finally {
@@ -126,7 +142,7 @@ const PodCreate = () => {
                         >
                             <div className="font-medium text-[#061E29]">Meeting</div>
                             <div className="text-xs text-[#061E29]/60 mt-1">
-                                Scheduled event with location
+                                Scheduling goals for a meeting
                             </div>
                         </button>
                         <button
@@ -148,59 +164,61 @@ const PodCreate = () => {
                 {/* Meeting-specific fields */}
                 {podType === 'Meeting' && (
                     <div className="space-y-4 p-4 bg-[#F3F4F4] rounded-lg">
-                        <h3 className="text-sm font-medium text-[#061E29]">Meeting Details</h3>
-
                         <div>
-                            <label className="block text-sm font-medium text-[#061E29] mb-2">
-                                Location
-                            </label>
-                            <input
-                                type="text"
-                                required
-                                className="w-full"
-                                placeholder="e.g., Conference Room A, Zoom Link, etc."
-                                value={location}
-                                onChange={(e) => setLocation(e.target.value)}
-                            />
+                            <h3 className="text-sm font-medium text-[#061E29]">Meeting Goals</h3>
+                            <p className="text-xs text-[#061E29]/60 mt-1">
+                                Location, duration, and start time are decided later. Add instructions if needed.
+                            </p>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-sm font-medium text-[#061E29] mb-2">
-                                    Duration (minutes)
-                                </label>
-                                <input
-                                    type="number"
-                                    required
-                                    min="1"
+                        <div className="space-y-3">
+                            <div className="p-3 bg-white rounded border border-[#061E29]/10">
+                                <p className="text-xs font-medium text-[#061E29] mb-2">Location</p>
+                                <textarea
                                     className="w-full"
-                                    placeholder="60"
-                                    value={duration}
-                                    onChange={(e) => setDuration(e.target.value)}
+                                    rows={2}
+                                    placeholder="Optional instructions for how to decide the location"
+                                    value={meetingGoalInstructions.location}
+                                    onChange={(e) =>
+                                        setMeetingGoalInstructions({
+                                            ...meetingGoalInstructions,
+                                            location: e.target.value
+                                        })
+                                    }
                                 />
                             </div>
 
-                            <div>
-                                <label className="block text-sm font-medium text-[#061E29] mb-2">
-                                    Start Date & Time
-                                </label>
-                                <input
-                                    type="datetime-local"
-                                    required
+                            <div className="p-3 bg-white rounded border border-[#061E29]/10">
+                                <p className="text-xs font-medium text-[#061E29] mb-2">Duration</p>
+                                <textarea
                                     className="w-full"
-                                    value={startDateTime}
-                                    onChange={(e) => setStartDateTime(e.target.value)}
+                                    rows={2}
+                                    placeholder="Optional instructions for how to decide the duration"
+                                    value={meetingGoalInstructions.duration}
+                                    onChange={(e) =>
+                                        setMeetingGoalInstructions({
+                                            ...meetingGoalInstructions,
+                                            duration: e.target.value
+                                        })
+                                    }
                                 />
                             </div>
-                        </div>
 
-                        <div className="mt-4 p-3 bg-white rounded border border-[#061E29]/10">
-                            <p className="text-xs text-[#061E29]/60 mb-2">Fixed Goals:</p>
-                            <ul className="text-xs text-[#061E29] space-y-1">
-                                <li>• Meeting Preparation</li>
-                                <li>• Meeting Execution</li>
-                                <li>• Follow-up Actions</li>
-                            </ul>
+                            <div className="p-3 bg-white rounded border border-[#061E29]/10">
+                                <p className="text-xs font-medium text-[#061E29] mb-2">Start Date & Time</p>
+                                <textarea
+                                    className="w-full"
+                                    rows={2}
+                                    placeholder="Optional instructions for how to decide the start time"
+                                    value={meetingGoalInstructions.startDateTime}
+                                    onChange={(e) =>
+                                        setMeetingGoalInstructions({
+                                            ...meetingGoalInstructions,
+                                            startDateTime: e.target.value
+                                        })
+                                    }
+                                />
+                            </div>
                         </div>
                     </div>
                 )}
@@ -294,6 +312,45 @@ const PodCreate = () => {
                         ))}
                     </div>
                 )}
+
+                <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                        <h3 className="text-sm font-medium text-[#061E29]">Invite Emails</h3>
+                        <p className="text-xs text-[#061E29]/60">
+                            Only invited emails can join the pod.
+                        </p>
+                    </div>
+                    <div className="flex gap-2">
+                        <input
+                            type="email"
+                            className="w-full"
+                            placeholder="name@example.com"
+                            value={inviteEmailInput}
+                            onChange={(e) => setInviteEmailInput(e.target.value)}
+                        />
+                        <button
+                            type="button"
+                            onClick={addInviteEmail}
+                            className="btn btn-secondary text-xs px-3"
+                        >
+                            Add
+                        </button>
+                    </div>
+                    {inviteEmails.length > 0 ? (
+                        <div className="flex flex-wrap gap-2">
+                            {inviteEmails.map(email => (
+                                <span
+                                    key={email}
+                                    className="px-2 py-1 bg-[#F3F4F4] text-xs text-[#061E29] rounded"
+                                >
+                                    {email}
+                                </span>
+                            ))}
+                        </div>
+                    ) : (
+                        <p className="text-xs text-[#061E29]/40">No invite emails yet.</p>
+                    )}
+                </div>
 
                 <button
                     disabled={loading}

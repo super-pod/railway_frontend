@@ -74,6 +74,17 @@ const Dashboard = () => {
                 {pods.map(pod => {
                     const token = getTokenFromLink(pod.link || '');
                     const podPath = token ? `/pod/${token}` : '#';
+                    const relationship = (pod.relationship || 'owner').toLowerCase();
+                    const relationshipLabel = relationship === 'joined'
+                        ? 'Joined'
+                        : relationship === 'invited'
+                            ? 'Invited'
+                            : 'Owner';
+                    const relationshipClass = relationship === 'joined'
+                        ? 'bg-emerald-100 text-emerald-700'
+                        : relationship === 'invited'
+                            ? 'bg-blue-100 text-blue-700'
+                            : 'bg-[#EEF2F3] text-[#061E29]/70';
                     return (
                     <Link
                         key={pod.id}
@@ -92,7 +103,11 @@ const Dashboard = () => {
                             <div className="flex-1 min-w-0">
                                 <div className="flex items-center justify-between gap-2 mb-1">
                                     <h2 className="text-base font-medium text-[#061E29]">Pod #{pod.id}</h2>
-                                    <span className={`text-[10px] px-2 py-0.5 rounded ${pod.status === 'running'
+                                    <div className="flex items-center gap-1">
+                                        <span className={`text-[10px] px-2 py-0.5 rounded ${relationshipClass}`}>
+                                            {relationshipLabel}
+                                        </span>
+                                        <span className={`text-[10px] px-2 py-0.5 rounded ${pod.status === 'running'
                                             ? 'bg-blue-100 text-blue-700'
                                             : pod.status === 'pending_review'
                                                 ? 'bg-amber-100 text-amber-700'
@@ -100,8 +115,9 @@ const Dashboard = () => {
                                                     ? 'bg-green-100 text-green-700'
                                                     : 'bg-[#F3F4F4] text-[#061E29]/60'
                                         }`}>
-                                        {(pod.status || 'idle').replace('_', ' ')}
-                                    </span>
+                                            {(pod.status || 'idle').replace('_', ' ')}
+                                        </span>
+                                    </div>
                                 </div>
                                 <p className="text-xs text-[#061E29]/60 line-clamp-2">
                                     {pod.description || 'No description'}

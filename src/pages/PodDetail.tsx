@@ -203,7 +203,7 @@ const PodDetail = () => {
                 && nextGoals.every((goal: any) => Boolean(goal.goal_value));
             setHuntStatus(hasAllValues ? 'done' : 'running');
         } catch (err: any) {
-            console.error(err);
+            console.error('Hunt failed', err.response?.data || err);
             const message = err.response?.data?.detail || 'Failed to start the hunt.';
             setHuntError(message);
             setHuntStatus('error');

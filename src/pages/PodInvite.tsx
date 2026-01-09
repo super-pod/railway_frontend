@@ -57,14 +57,14 @@ const PodInvite = () => {
             return;
         }
         setJoining(true);
-        apiClient.post(`/pods/${pod.id}/join`)
+        apiClient.post(`/pods/token/${token}/join`)
             .then(res => {
                 setInviteEmails(res.data?.invite_emails || []);
                 setInviteJoinedEmails(res.data?.invite_joined_emails || []);
             })
             .catch(err => console.error(err))
             .finally(() => setJoining(false));
-    }, [pod, profile, isJoined, joining]);
+    }, [pod, profile, isJoined, joining, token]);
 
     if (loading) {
         return (
@@ -139,7 +139,7 @@ const PodInvite = () => {
                     <button
                         type="button"
                         className="btn btn-secondary w-full"
-                        onClick={() => navigate(`/pods/${pod.id}`)}
+                        onClick={() => navigate(`/pod/${token}`)}
                     >
                         Open Pod
                     </button>

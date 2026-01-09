@@ -5,7 +5,7 @@ import { Target, CheckCircle, Clock } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 const PodDetail = () => {
-    const { podId } = useParams();
+    const { token } = useParams();
     const { profile } = useAuth();
     const [pod, setPod] = useState<any>(null);
     const [goals, setGoals] = useState<any[]>([]);
@@ -25,8 +25,8 @@ const PodDetail = () => {
         const fetchPod = async () => {
             try {
                 const [podRes, goalsRes] = await Promise.all([
-                    apiClient.get(`/pods/${podId}`),
-                    apiClient.get(`/goals/${podId}`)
+                    apiClient.get(`/pods/token/${token}`),
+                    apiClient.get(`/goals/token/${token}`)
                 ]);
                 setPod(podRes.data);
                 setGoals(goalsRes.data);
@@ -57,10 +57,10 @@ const PodDetail = () => {
         };
 
         fetchPod();
-    }, [podId]);
+    }, [token]);
 
     useEffect(() => {
-        if (!podId || !pod || !profile?.email || !profile?.is_calendar_synced) {
+        if (!token || !pod || !profile?.email || !profile?.is_calendar_synced) {
             return;
         }
         const invited = (pod.invite_emails || []).some(
@@ -72,16 +72,16 @@ const PodDetail = () => {
         if (!invited || alreadyJoined) {
             return;
         }
-        apiClient.post(`/pods/${podId}/join`)
+        apiClient.post(`/pods/token/${token}/join`)
             .then(res => {
                 setInviteEmails(res.data?.invite_emails || []);
                 setInviteJoinedEmails(res.data?.invite_joined_emails || []);
             })
             .catch(err => console.error(err));
-    }, [podId, pod, profile]);
+    }, [token, pod, profile]);
 
     const addInviteEmail = () => {
-        if (!podId) {
+        if (!token) {
             return;
         }
         const trimmed = inviteEmailInput.trim();
@@ -90,7 +90,7 @@ const PodDetail = () => {
         }
         const exists = inviteEmails.some(email => email.toLowerCase() === trimmed.toLowerCase());
         if (!exists) {
-            apiClient.post(`/pods/${podId}/invites`, { emails: [trimmed] })
+            apiClient.post(`/pods/token/${token}/invites`, { emails: [trimmed] })
                 .then(res => {
                     setInviteEmails(res.data?.invite_emails || []);
                     setInviteJoinedEmails(res.data?.invite_joined_emails || []);
@@ -101,10 +101,10 @@ const PodDetail = () => {
     };
 
     const removeInviteEmail = (email: string) => {
-        if (!podId) {
+        if (!token) {
             return;
         }
-        apiClient.post(`/pods/${podId}/invites/remove`, { emails: [email] })
+        apiClient.post(`/pods/token/${token}/invites/remove`, { emails: [email] })
             .then(res => {
                 setInviteEmails(res.data?.invite_emails || []);
                 setInviteJoinedEmails(res.data?.invite_joined_emails || []);
@@ -113,12 +113,12 @@ const PodDetail = () => {
     };
 
     const refreshInviteStatus = async () => {
-        if (!podId) {
+        if (!token) {
             return;
         }
         setRefreshing(true);
         try {
-            const podRes = await apiClient.get(`/pods/${podId}`);
+            const podRes = await apiClient.get(`/pods/token/${token}`);
             setPod(podRes.data);
             setInviteEmails(podRes.data?.invite_emails || []);
             setInviteJoinedEmails(podRes.data?.invite_joined_emails || []);
@@ -147,7 +147,7 @@ const PodDetail = () => {
         );
     }
 
-    const shareLink = pod.link || `${window.location.origin}/pods/${pod.id}`;
+    const shareLink = pod.link || `${window.location.origin}/pod/${token}`;
     const isOwner = profile?.id === pod.owner_user_id;
     const copyLink = async () => {
         try {
@@ -180,7 +180,7 @@ const PodDetail = () => {
             for (const goal of updates) {
                 await apiClient.patch(`/goals/${goal.id}`, { instructions: instructionEdits[goal.id] || '' });
             }
-            const refreshed = await apiClient.get(`/goals/${podId}`);
+            const refreshed = await apiClient.get(`/goals/token/${token}`);
             setGoals(refreshed.data);
         } catch (err) {
             console.error(err);
@@ -190,7 +190,7 @@ const PodDetail = () => {
     };
 
     const startHunt = async () => {
-        if (!podId || !isOwner) {
+        if (!token || !isOwner) {
             return;
         }
         if (pod?.status === 'closed') {
@@ -199,7 +199,7 @@ const PodDetail = () => {
         setHuntStatus('running');
         setHuntError(null);
         try {
-            const res = await apiClient.post(`/pods/${podId}/hunt`);
+            const res = await apiClient.post(`/pods/token/${token}/hunt`);
             const nextGoals = res.data?.goals || [];
             setGoals(nextGoals);
             setPod((prev: any) => ({ ...prev, status: res.data?.status || 'pending_review' }));
@@ -215,12 +215,12 @@ const PodDetail = () => {
     };
 
     const closePod = async () => {
-        if (!podId || !isOwner) {
+        if (!token || !isOwner) {
             return;
         }
         setClosingPod(true);
         try {
-            const res = await apiClient.post(`/pods/${podId}/close`);
+            const res = await apiClient.post(`/pods/token/${token}/close`);
             setPod(res.data);
             window.location.assign('/dashboard');
         } catch (err) {

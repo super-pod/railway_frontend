@@ -29,6 +29,14 @@ const Dashboard = () => {
         fetchPods();
     }, []);
 
+    const getTokenFromLink = (link: string | null) => {
+        if (!link) return null;
+        const marker = '/pod-invite/';
+        const index = link.indexOf(marker);
+        if (index === -1) return null;
+        return link.slice(index + marker.length);
+    };
+
     if (loading) {
         return (
             <div className="p-8 flex items-center justify-center min-h-[400px]">
@@ -63,11 +71,19 @@ const Dashboard = () => {
 
             {/* Pods Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {pods.map(pod => (
+                {pods.map(pod => {
+                    const token = getTokenFromLink(pod.link || '');
+                    const podPath = token ? `/pod/${token}` : '#';
+                    return (
                     <Link
                         key={pod.id}
-                        to={`/pods/${pod.id}`}
-                        className="card p-5 hover:border-[#5F9598]/30 group"
+                        to={podPath}
+                        className={`card p-5 hover:border-[#5F9598]/30 group ${token ? '' : 'opacity-60 cursor-not-allowed'}`}
+                        onClick={(e) => {
+                            if (!token) {
+                                e.preventDefault();
+                            }
+                        }}
                     >
                         <div className="flex items-start gap-3 mb-3">
                             <div className="w-10 h-10 bg-[#061E29] rounded-lg flex items-center justify-center flex-shrink-0">
@@ -97,7 +113,8 @@ const Dashboard = () => {
                             <span>→</span>
                         </div>
                     </Link>
-                ))}
+                    );
+                })}
 
                 {pods.length === 0 && (
                     <div className="col-span-full card p-16 text-center">

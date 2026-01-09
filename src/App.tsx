@@ -28,7 +28,7 @@ function App() {
                         <Route path="/dashboard/schedule" element={<Schedule />} />
 
                         <Route path="/pods/create" element={<PodCreate />} />
-                        <Route path="/pods/:podId" element={<PodDetail />} />
+                        <Route path="/pod/:token" element={<PodDetail />} />
                         <Route path="/pod-invite/:token" element={<PodInvite />} />
                         <Route path="/sync-calendar" element={<SyncCalendar />} />
                         <Route path="/setup-orca" element={<SetupOrca />} />

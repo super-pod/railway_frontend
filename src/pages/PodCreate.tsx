@@ -43,6 +43,14 @@ const PodCreate = () => {
         setGoals(updatedGoals);
     };
 
+    const getTokenFromLink = (link: string | null) => {
+        if (!link) return null;
+        const marker = '/pod-invite/';
+        const index = link.indexOf(marker);
+        if (index === -1) return null;
+        return link.slice(index + marker.length);
+    };
+
     const addInviteEmail = () => {
         const trimmed = inviteEmailInput.trim();
         if (!trimmed) {
@@ -91,8 +99,13 @@ const PodCreate = () => {
 
             const res = await apiClient.post('/pods', payload);
             const newPod = res.data;
-            if (newPod?.id) {
-                navigate(`/pods/${newPod.id}`);
+            if (newPod?.link) {
+                const token = getTokenFromLink(newPod.link);
+                if (token) {
+                    navigate(`/pod/${token}`);
+                } else {
+                    navigate('/dashboard');
+                }
             } else {
                 navigate('/dashboard');
             }

@@ -19,6 +19,7 @@ const PodDetail = () => {
     const [huntError, setHuntError] = useState<string | null>(null);
     const [instructionEdits, setInstructionEdits] = useState<Record<number, string>>({});
     const [closingPod, setClosingPod] = useState(false);
+    const [closeError, setCloseError] = useState<string | null>(null);
     const [editingGoals, setEditingGoals] = useState<Record<number, boolean>>({});
     const [savingGoals, setSavingGoals] = useState<Record<number, boolean>>({});
     const [savingAllGoals, setSavingAllGoals] = useState(false);
@@ -174,7 +175,11 @@ const PodDetail = () => {
     const formatGoalValue = (value: string | null) => {
         if (!value) return '';
         try {
-            return JSON.stringify(JSON.parse(value), null, 2);
+            const parsed = JSON.parse(value);
+            if (typeof parsed === 'string') {
+                return parsed;
+            }
+            return JSON.stringify(parsed, null, 2);
         } catch {
             return value;
         }
@@ -210,12 +215,19 @@ const PodDetail = () => {
             return;
         }
         setClosingPod(true);
+        setCloseError(null);
         try {
             const res = await apiClient.post(`/pods/token/${token}/close`);
-            setPod(res.data);
+            if (res.data?.pod) {
+                setPod(res.data.pod);
+            } else {
+                setPod(res.data);
+            }
             window.location.assign('/dashboard');
         } catch (err) {
             console.error(err);
+            const message = (err as any).response?.data?.detail || 'Failed to close pod.';
+            setCloseError(message);
         } finally {
             setClosingPod(false);
         }
@@ -571,6 +583,9 @@ const PodDetail = () => {
 
                 {huntError && (
                     <p className="text-xs text-red-600">{huntError}</p>
+                )}
+                {closeError && (
+                    <p className="text-xs text-red-600">{closeError}</p>
                 )}
 
                 {showResults && (

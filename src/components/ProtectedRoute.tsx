@@ -21,7 +21,7 @@ const ProtectedRoute = () => {
     // Critical Step: Check if calendar is synced
     // If not synced, and not already on the sync-calendar page, redirect to it
     if (profile && !profile.is_calendar_synced && location.pathname !== '/sync-calendar') {
-        return <Navigate to="/sync-calendar" replace />;
+        return <Navigate to="/sync-calendar" state={{ from: location }} replace />;
     }
 
     return <Outlet />;

@@ -1,22 +1,24 @@
 import React, { useEffect } from 'react';
 import { signInWithGoogle } from '../lib/firebaseClient';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Waves } from 'lucide-react';
 
 const Login = () => {
     const navigate = useNavigate();
+    const location = useLocation();
     const { user, profile } = useAuth();
 
     useEffect(() => {
         if (user && profile) {
+            const from = (location.state as any)?.from?.pathname;
             if (profile.is_calendar_synced) {
-                navigate('/dashboard');
+                navigate(from || '/dashboard');
             } else {
-                navigate('/sync-calendar');
+                navigate('/sync-calendar', { state: { from: (location.state as any)?.from || location } });
             }
         }
-    }, [user, profile, navigate]);
+    }, [user, profile, navigate, location]);
 
     const handleLogin = async () => {
         try {

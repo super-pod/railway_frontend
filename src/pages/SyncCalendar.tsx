@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import apiClient from '../lib/apiClient';
 import { Waves } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -8,6 +8,7 @@ import { signInWithGoogleCalendar } from '../lib/firebaseClient';
 const SyncCalendar = () => {
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
+    const location = useLocation();
     const { refreshProfile } = useAuth();
 
     const handleSync = async () => {
@@ -21,7 +22,8 @@ const SyncCalendar = () => {
                     token: accessToken
                 });
                 await refreshProfile();
-                navigate('/dashboard');
+                const from = (location.state as any)?.from?.pathname;
+                navigate(from || '/dashboard');
             } else {
                 alert("Failed to get Google Calendar access. Please make sure you grant the requested permissions.");
             }

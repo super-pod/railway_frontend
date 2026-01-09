@@ -38,7 +38,7 @@ const PodDetail = () => {
     }, [podId]);
 
     useEffect(() => {
-        if (!podId || !pod || !profile?.email) {
+        if (!podId || !pod || !profile?.email || !profile?.is_calendar_synced) {
             return;
         }
         const invited = (pod.invite_emails || []).some(

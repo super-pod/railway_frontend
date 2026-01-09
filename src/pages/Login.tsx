@@ -12,6 +12,10 @@ const Login = () => {
     useEffect(() => {
         if (user && profile) {
             const from = (location.state as any)?.from?.pathname;
+            if (!profile.has_orca) {
+                navigate('/setup-orca', { state: { from: (location.state as any)?.from || location } });
+                return;
+            }
             if (profile.is_calendar_synced) {
                 navigate(from || '/dashboard');
             } else {

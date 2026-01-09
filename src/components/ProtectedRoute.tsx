@@ -18,10 +18,17 @@ const ProtectedRoute = () => {
         return <Navigate to="/login" state={{ from: location }} replace />;
     }
 
+    const path = location.pathname;
+    const isPodLink = path.startsWith('/pod/') || path.startsWith('/pod-invite/');
+
     // Critical Step: Check if calendar is synced
-    // If not synced, and not already on the sync-calendar page, redirect to it
-    if (profile && !profile.is_calendar_synced && location.pathname !== '/sync-calendar') {
+    // Allow pod invite/details to handle calendar gating per pod type
+    if (profile && !profile.is_calendar_synced && path !== '/sync-calendar' && !isPodLink) {
         return <Navigate to="/sync-calendar" state={{ from: location }} replace />;
+    }
+
+    if (profile && !profile.has_orca && path !== '/setup-orca') {
+        return <Navigate to="/setup-orca" state={{ from: location }} replace />;
     }
 
     return <Outlet />;

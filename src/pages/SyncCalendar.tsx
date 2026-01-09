@@ -23,6 +23,11 @@ const SyncCalendar = () => {
                 });
                 await refreshProfile();
                 const from = (location.state as any)?.from?.pathname;
+                const profileRes = await apiClient.post('/auth/me');
+                if (!profileRes.data.user?.has_orca) {
+                    navigate('/setup-orca', { state: { from: (location.state as any)?.from || location } });
+                    return;
+                }
                 navigate(from || '/dashboard');
             } else {
                 alert("Failed to get Google Calendar access. Please make sure you grant the requested permissions.");

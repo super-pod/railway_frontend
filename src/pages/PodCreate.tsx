@@ -171,6 +171,18 @@ const PodCreate = () => {
                                 Custom goals and objectives
                             </div>
                         </button>
+                        <div className="p-4 rounded-lg border-2 border-dashed border-[#061E29]/15 bg-[#F3F4F4] opacity-60">
+                            <div className="font-medium text-[#061E29]">Travel Planning</div>
+                            <div className="text-xs text-[#061E29]/60 mt-1">
+                                Coming soon
+                            </div>
+                        </div>
+                        <div className="p-4 rounded-lg border-2 border-dashed border-[#061E29]/15 bg-[#F3F4F4] opacity-60">
+                            <div className="font-medium text-[#061E29]">Restaurant Choosing</div>
+                            <div className="text-xs text-[#061E29]/60 mt-1">
+                                Coming soon
+                            </div>
+                        </div>
                     </div>
                 </div>
 

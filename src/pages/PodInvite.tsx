@@ -50,7 +50,11 @@ const PodInvite = () => {
     }, [inviteJoinedEmails, profile]);
 
     useEffect(() => {
-        if (!pod || !profile?.is_calendar_synced || isJoined || joining) {
+        if (!pod || isJoined || joining) {
+            return;
+        }
+        const needsCalendar = (pod.status === 'closed') ? false : (pod.type || '').toLowerCase() === 'meeting';
+        if (needsCalendar && !profile?.is_calendar_synced) {
             return;
         }
         if (pod.status === 'closed') {
@@ -126,7 +130,7 @@ const PodInvite = () => {
                             ? 'You have joined this pod.'
                             : 'Sync your calendar to join the pod.'}
                 </p>
-                {pod?.status !== 'closed' && !profile?.is_calendar_synced && (
+                {pod?.status !== 'closed' && (pod.type || '').toLowerCase() === 'meeting' && !profile?.is_calendar_synced && (
                     <button
                         type="button"
                         className="btn btn-primary w-full"
@@ -135,7 +139,7 @@ const PodInvite = () => {
                         Sync Calendar
                     </button>
                 )}
-                {pod?.status !== 'closed' && profile?.is_calendar_synced && (
+                {pod?.status !== 'closed' && ((pod.type || '').toLowerCase() !== 'meeting' || profile?.is_calendar_synced) && (
                     <button
                         type="button"
                         className="btn btn-secondary w-full"

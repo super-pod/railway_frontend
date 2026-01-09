@@ -9,7 +9,6 @@ const Sidebar = () => {
 
     const menuItems = [
         { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
-        { icon: Users, label: 'Pods', path: '/dashboard' },
         { icon: Settings, label: 'Settings', path: '/setup-orca' },
     ];
 

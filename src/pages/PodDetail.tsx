@@ -17,9 +17,14 @@ const PodDetail = () => {
     const [refreshing, setRefreshing] = useState(false);
     const [huntStatus, setHuntStatus] = useState<'idle' | 'running' | 'done' | 'error'>('idle');
     const [huntError, setHuntError] = useState<string | null>(null);
-    const [savingInstructions, setSavingInstructions] = useState(false);
     const [instructionEdits, setInstructionEdits] = useState<Record<number, string>>({});
     const [closingPod, setClosingPod] = useState(false);
+    const [editingGoals, setEditingGoals] = useState<Record<number, boolean>>({});
+    const [savingGoals, setSavingGoals] = useState<Record<number, boolean>>({});
+    const [addGoalOpen, setAddGoalOpen] = useState(false);
+    const [newGoalName, setNewGoalName] = useState('');
+    const [newGoalType, setNewGoalType] = useState('');
+    const [newGoalInstructions, setNewGoalInstructions] = useState('');
 
     useEffect(() => {
         const fetchPod = async () => {
@@ -60,7 +65,11 @@ const PodDetail = () => {
     }, [token]);
 
     useEffect(() => {
-        if (!token || !pod || !profile?.email || !profile?.is_calendar_synced) {
+        if (!token || !pod || !profile?.email) {
+            return;
+        }
+        const needsCalendar = (pod.type || '').toLowerCase() === 'meeting';
+        if (needsCalendar && !profile?.is_calendar_synced) {
             return;
         }
         const invited = (pod.invite_emails || []).some(
@@ -170,25 +179,6 @@ const PodDetail = () => {
         }
     };
 
-    const saveInstructions = async () => {
-        if (!isOwner) {
-            return;
-        }
-        setSavingInstructions(true);
-        try {
-            const updates = goals.filter((goal) => instructionEdits[goal.id] !== goal.goal_instructions);
-            for (const goal of updates) {
-                await apiClient.patch(`/goals/${goal.id}`, { instructions: instructionEdits[goal.id] || '' });
-            }
-            const refreshed = await apiClient.get(`/goals/token/${token}`);
-            setGoals(refreshed.data);
-        } catch (err) {
-            console.error(err);
-        } finally {
-            setSavingInstructions(false);
-        }
-    };
-
     const startHunt = async () => {
         if (!token || !isOwner) {
             return;
@@ -243,6 +233,10 @@ const PodDetail = () => {
     const allGoalsHaveValues = goals.length > 0 && goals.every(goal => Boolean(goal.goal_value));
     const showResults = allGoalsHaveValues;
     const showPostHuntActions = isOwner && !isClosed && (podStatus === 'pending_review' || allGoalsHaveValues);
+    const showIdleActions = isOwner && !isClosed && podStatus === 'idle';
+    const needsCalendar = (pod.type || '').toLowerCase() === 'meeting';
+    const allowAddGoals = showIdleActions && (pod.type || '').toLowerCase() !== 'meeting';
+    const canEditGoals = isOwner && !isClosed;
 
     return (
         <div className="p-6 max-w-4xl mx-auto">
@@ -358,16 +352,128 @@ const PodDetail = () => {
             </div>
 
             <div className="mb-6">
-                <h2 className="text-lg font-medium text-[#061E29] mb-4 flex items-center gap-2">
-                    <Target className="w-5 h-5 text-[#5F9598]" />
-                    Pod Goals
-                </h2>
+                <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-lg font-medium text-[#061E29] flex items-center gap-2">
+                        <Target className="w-5 h-5 text-[#5F9598]" />
+                        Pod Goals
+                    </h2>
+                    {allowAddGoals && (
+                        <button
+                            type="button"
+                            className="btn btn-secondary text-xs px-3"
+                            onClick={() => setAddGoalOpen((prev) => !prev)}
+                        >
+                            {addGoalOpen ? 'Close' : 'Add Goal'}
+                        </button>
+                    )}
+                </div>
                 <div className="space-y-3">
+                    {addGoalOpen && allowAddGoals && (
+                        <div className="card p-4 space-y-2">
+                            <div className="text-xs font-medium text-[#061E29]">New Goal</div>
+                            <input
+                                type="text"
+                                className="w-full"
+                                placeholder="Goal name"
+                                value={newGoalName}
+                                onChange={(e) => setNewGoalName(e.target.value)}
+                            />
+                            <input
+                                type="text"
+                                className="w-full"
+                                placeholder="Type (e.g., deliverable, task)"
+                                value={newGoalType}
+                                onChange={(e) => setNewGoalType(e.target.value)}
+                            />
+                            <textarea
+                                className="w-full"
+                                rows={2}
+                                placeholder="Instructions"
+                                value={newGoalInstructions}
+                                onChange={(e) => setNewGoalInstructions(e.target.value)}
+                            />
+                            <button
+                                type="button"
+                                className="btn btn-secondary"
+                                disabled={!newGoalName.trim() || !newGoalType.trim()}
+                                onClick={async () => {
+                                    try {
+                                        await apiClient.post(`/goals/token/${token}`, {
+                                            name: newGoalName.trim(),
+                                            type: newGoalType.trim(),
+                                            instructions: newGoalInstructions.trim()
+                                        });
+                                        setNewGoalName('');
+                                        setNewGoalType('');
+                                        setNewGoalInstructions('');
+                                        const refreshed = await apiClient.get(`/goals/token/${token}`);
+                                        setGoals(refreshed.data);
+                                    } catch (err) {
+                                        console.error(err);
+                                    }
+                                }}
+                            >
+                                Add Goal
+                            </button>
+                        </div>
+                    )}
                     {goals.map(goal => (
                         <div key={goal.id} className="card p-4 flex items-center justify-between">
                             <div className="flex-1">
                                 <h3 className="text-sm font-medium text-[#061E29] mb-1">{goal.goal_name}</h3>
-                                <p className="text-xs text-[#061E29]/60">{goal.goal_instructions}</p>
+                                {canEditGoals && editingGoals[goal.id] ? (
+                                    <div className="space-y-2">
+                                        <textarea
+                                            className="w-full"
+                                            rows={2}
+                                            value={instructionEdits[goal.id] ?? ''}
+                                            onChange={(e) => handleInstructionChange(goal.id, e.target.value)}
+                                        />
+                                        <div className="text-[11px] text-amber-600 flex items-center gap-2">
+                                            <Clock className="w-3 h-3" />
+                                            Pending until hunt runs
+                                        </div>
+                                        <div className="flex gap-2">
+                                            <button
+                                                type="button"
+                                                className="btn btn-secondary"
+                                                onClick={() => {
+                                                    setEditingGoals((prev) => ({ ...prev, [goal.id]: false }));
+                                                    setInstructionEdits((prev) => ({
+                                                        ...prev,
+                                                        [goal.id]: goal.goal_instructions || ''
+                                                    }));
+                                                }}
+                                            >
+                                                Cancel
+                                            </button>
+                                            <button
+                                                type="button"
+                                                className="btn btn-primary"
+                                                disabled={savingGoals[goal.id]}
+                                                onClick={async () => {
+                                                    setSavingGoals((prev) => ({ ...prev, [goal.id]: true }));
+                                                    try {
+                                                        await apiClient.patch(`/goals/${goal.id}`, {
+                                                            instructions: instructionEdits[goal.id] || ''
+                                                        });
+                                                        const refreshed = await apiClient.get(`/goals/token/${token}`);
+                                                        setGoals(refreshed.data);
+                                                        setEditingGoals((prev) => ({ ...prev, [goal.id]: false }));
+                                                    } catch (err) {
+                                                        console.error(err);
+                                                    } finally {
+                                                        setSavingGoals((prev) => ({ ...prev, [goal.id]: false }));
+                                                    }
+                                                }}
+                                            >
+                                                {savingGoals[goal.id] ? 'Saving...' : 'Save'}
+                                            </button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <p className="text-xs text-[#061E29]/60">{goal.goal_instructions}</p>
+                                )}
                                 {goal.goal_value && (
                                     <pre className="mt-2 text-[11px] text-[#061E29]/80 whitespace-pre-wrap bg-[#F3F4F4] rounded p-2">
                                         {formatGoalValue(goal.goal_value)}
@@ -383,6 +489,15 @@ const PodDetail = () => {
                                         <span className="text-xs">Pending</span>
                                     </div>
                                 )}
+                                {canEditGoals && !editingGoals[goal.id] && (
+                                    <button
+                                        type="button"
+                                        className="ml-3 text-xs text-[#5F9598] hover:text-[#1D546D]"
+                                        onClick={() => setEditingGoals((prev) => ({ ...prev, [goal.id]: true }))}
+                                    >
+                                        Edit
+                                    </button>
+                                )}
                             </div>
                         </div>
                     ))}
@@ -397,12 +512,12 @@ const PodDetail = () => {
                     <div>
                         <h2 className="text-sm font-medium text-[#061E29]">Start the Hunt</h2>
                         <p className="text-xs text-[#061E29]/60">
-                            Combine calendars, Orca instructions, and pod goals to fill goal outputs.
+                            Combine Orca instructions and pod goals to fill goal outputs.
                         </p>
                     </div>
                     <button
                         className="btn btn-primary"
-                        disabled={!allInviteesJoined || !isOwner || huntStatus === 'running' || isClosed}
+                        disabled={!allInviteesJoined || !isOwner || huntStatus === 'running' || isClosed || podStatus === 'pending_review'}
                         onClick={startHunt}
                     >
                         {huntStatus === 'running' ? 'Running...' : 'Start the hunt'}
@@ -423,8 +538,13 @@ const PodDetail = () => {
                 {huntStatus === 'running' && (
                     <div className="flex items-center gap-3 text-sm text-[#061E29]/70">
                         <div className="spinner"></div>
-                        <span>Pod is running. Gathering calendars and instructions...</span>
+                        <span>Pod is running. Gathering context and instructions...</span>
                     </div>
+                )}
+                {!profile?.is_calendar_synced && needsCalendar && (
+                    <p className="text-xs text-amber-600">
+                        Calendar sync is required for meeting pods.
+                    </p>
                 )}
 
                 {huntError && (
@@ -447,31 +567,12 @@ const PodDetail = () => {
 
                 {showPostHuntActions && (
                     <div className="space-y-3">
-                        <h3 className="text-xs uppercase tracking-widest text-[#5F9598]">Edit Goal Instructions</h3>
-                        {goals.map(goal => (
-                            <div key={`edit-${goal.id}`} className="space-y-2">
-                                <div className="text-xs font-medium text-[#061E29]">{goal.goal_name}</div>
-                                <textarea
-                                    className="w-full"
-                                    rows={2}
-                                    value={instructionEdits[goal.id] ?? ''}
-                                    onChange={(e) => handleInstructionChange(goal.id, e.target.value)}
-                                />
-                            </div>
-                        ))}
+                        <h3 className="text-xs uppercase tracking-widest text-[#5F9598]">Review & Finish</h3>
                         <div className="flex flex-wrap gap-3">
                             <button
                                 type="button"
-                                className="btn btn-secondary"
-                                disabled={savingInstructions}
-                                onClick={saveInstructions}
-                            >
-                                {savingInstructions ? 'Saving...' : 'Save Instructions'}
-                            </button>
-                            <button
-                                type="button"
                                 className="btn btn-primary"
-                                disabled={savingInstructions || huntStatus === 'running' || isClosed}
+                                disabled={huntStatus === 'running' || isClosed}
                                 onClick={async () => {
                                     await saveInstructions();
                                     await startHunt();

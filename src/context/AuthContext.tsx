@@ -8,6 +8,7 @@ interface UserProfile {
     email: string;
     firebaseid: string;
     is_calendar_synced: boolean;
+    has_orca: boolean;
 }
 
 interface AuthContextType {

@@ -21,6 +21,7 @@ const PodDetail = () => {
     const [closingPod, setClosingPod] = useState(false);
     const [editingGoals, setEditingGoals] = useState<Record<number, boolean>>({});
     const [savingGoals, setSavingGoals] = useState<Record<number, boolean>>({});
+    const [savingAllGoals, setSavingAllGoals] = useState(false);
     const [addGoalOpen, setAddGoalOpen] = useState(false);
     const [newGoalName, setNewGoalName] = useState('');
     const [newGoalType, setNewGoalType] = useState('');
@@ -237,6 +238,7 @@ const PodDetail = () => {
     const needsCalendar = (pod.type || '').toLowerCase() === 'meeting';
     const allowAddGoals = showIdleActions && (pod.type || '').toLowerCase() !== 'meeting';
     const canEditGoals = isOwner && !isClosed;
+    const canDeleteGoals = canEditGoals && showIdleActions && allowAddGoals;
 
     return (
         <div className="p-6 max-w-4xl mx-auto">
@@ -498,6 +500,26 @@ const PodDetail = () => {
                                         Edit
                                     </button>
                                 )}
+                                {canDeleteGoals && !editingGoals[goal.id] && (
+                                    <button
+                                        type="button"
+                                        className="ml-2 text-xs text-red-500 hover:text-red-600"
+                                        onClick={async () => {
+                                            if (!window.confirm('Delete this goal?')) {
+                                                return;
+                                            }
+                                            try {
+                                                await apiClient.delete(`/goals/${goal.id}`);
+                                                const refreshed = await apiClient.get(`/goals/token/${token}`);
+                                                setGoals(refreshed.data);
+                                            } catch (err) {
+                                                console.error(err);
+                                            }
+                                        }}
+                                    >
+                                        Delete
+                                    </button>
+                                )}
                             </div>
                         </div>
                     ))}
@@ -572,13 +594,31 @@ const PodDetail = () => {
                             <button
                                 type="button"
                                 className="btn btn-primary"
-                                disabled={huntStatus === 'running' || isClosed}
+                                disabled={savingAllGoals || huntStatus === 'running' || isClosed}
                                 onClick={async () => {
-                                    await saveInstructions();
+                                    setSavingAllGoals(true);
+                                    try {
+                                        const updates = goals.filter((goal) => {
+                                            const current = goal.goal_instructions || '';
+                                            const next = instructionEdits[goal.id] ?? '';
+                                            return current !== next;
+                                        });
+                                        for (const goal of updates) {
+                                            await apiClient.patch(`/goals/${goal.id}`, {
+                                                instructions: instructionEdits[goal.id] || ''
+                                            });
+                                        }
+                                        const refreshed = await apiClient.get(`/goals/token/${token}`);
+                                        setGoals(refreshed.data);
+                                    } catch (err) {
+                                        console.error(err);
+                                    } finally {
+                                        setSavingAllGoals(false);
+                                    }
                                     await startHunt();
                                 }}
                             >
-                                Rerun Hunt
+                                {savingAllGoals ? 'Saving...' : 'Rerun Hunt'}
                             </button>
                             <button
                                 type="button"

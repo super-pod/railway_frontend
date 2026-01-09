@@ -51,68 +51,78 @@ const Schedule = () => {
     const formatDate = (isoString: string) => {
         if (!isoString) return '';
         const date = new Date(isoString);
-        return date.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' });
+        return date.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
     };
 
     if (loading) {
         return (
-            <div className="p-8 flex items-center justify-center min-h-[400px]">
-                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
-                <span className="ml-3 text-blue-300">Loading your schedule...</span>
+            <div className="p-8 flex flex-col items-center justify-center min-h-[400px]">
+                <div className="spinner"></div>
+                <span className="mt-3 text-sm text-[#061E29]/60">Loading schedule...</span>
             </div>
         );
     }
 
     return (
-        <div className="p-8 max-w-4xl mx-auto">
-            <div className="flex items-center justify-between mb-8">
-                <div className="flex items-center gap-3">
-                    <CalendarIcon className="w-8 h-8 text-blue-400" />
-                    <h1 className="text-3xl font-bold text-white">My Schedule</h1>
+        <div className="p-6 max-w-4xl mx-auto">
+            {/* Header */}
+            <div className="flex items-center justify-between mb-6">
+                <div>
+                    <h1 className="text-2xl font-semibold text-[#061E29] mb-1">Schedule</h1>
+                    <p className="text-sm text-[#061E29]/60">Your upcoming events</p>
                 </div>
                 <button
                     onClick={() => fetchEvents(true)}
                     disabled={refreshing || loading}
-                    className="p-2 hover:bg-slate-800 rounded-full transition-colors disabled:opacity-50"
-                    title="Refresh Schedule"
+                    className="btn btn-secondary"
                 >
-                    <RefreshCw className={`w-5 h-5 text-blue-400 ${refreshing ? 'animate-spin' : ''}`} />
+                    <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+                    {refreshing ? 'Refreshing' : 'Refresh'}
                 </button>
             </div>
 
             {error ? (
-                <div className="glass-card p-6 border-red-500/50 flex flex-col items-center gap-4 text-center">
-                    <AlertCircle className="w-10 h-10 text-red-400" />
-                    <div>
-                        <p className="text-red-200 font-medium text-lg">{error}</p>
-                        <p className="text-red-300/60 mt-1 mb-6">Your calendar connection might have expired or permissions were not granted.</p>
-                        <Link to="/sync-calendar" className="btn-primary inline-flex items-center px-6 py-2">
-                            Reconnect Calendar
-                        </Link>
+                <div className="card p-8 text-center">
+                    <div className="w-12 h-12 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <AlertCircle className="w-6 h-6 text-red-500" />
                     </div>
+                    <h2 className="text-lg font-semibold text-[#061E29] mb-2">{error}</h2>
+                    <p className="text-sm text-[#061E29]/60 mb-6">
+                        Access token might be stale or permissions were revoked.
+                    </p>
+                    <Link to="/sync-calendar" className="btn btn-primary">
+                        Reconnect Calendar
+                    </Link>
                 </div>
             ) : events.length === 0 ? (
-                <div className="text-center py-20 glass-card">
-                    <p className="text-blue-300 italic">No upcoming events found in your primary calendar.</p>
+                <div className="card p-12 text-center">
+                    <CalendarIcon className="w-10 h-10 text-[#061E29]/20 mx-auto mb-3" />
+                    <p className="text-sm text-[#061E29]/40">No upcoming events</p>
                 </div>
             ) : (
-                <div className="space-y-4">
+                <div className="space-y-2">
                     {events.map((event: CalendarEvent, index: number) => (
-                        <div key={event.id || index} className="glass-card p-5 hover:bg-slate-800/50 transition-colors">
-                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                                <div>
-                                    <h3 className="text-lg font-semibold text-white mb-1">{event.summary || '(No title)'}</h3>
-                                    <div className="flex items-center text-slate-400 text-sm">
-                                        <Clock className="w-4 h-4 mr-2 text-blue-400" />
-                                        <span>
-                                            {formatDate(event.start?.dateTime || event.start?.date || '')} • {formatTime(event.start?.dateTime || '')} - {formatTime(event.end?.dateTime || '')}
+                        <div key={event.id || index} className="card p-4 hover:border-[#5F9598]/30">
+                            <div className="flex items-start justify-between gap-4">
+                                <div className="flex-1 min-w-0">
+                                    <h3 className="text-sm font-medium text-[#061E29] mb-1 truncate">
+                                        {event.summary || 'Untitled Event'}
+                                    </h3>
+                                    <div className="flex items-center gap-3 text-xs text-[#061E29]/60">
+                                        <span className="flex items-center gap-1.5">
+                                            <CalendarIcon className="w-3.5 h-3.5" />
+                                            {formatDate(event.start?.dateTime || event.start?.date || '')}
+                                        </span>
+                                        <span className="flex items-center gap-1.5">
+                                            <Clock className="w-3.5 h-3.5" />
+                                            {formatTime(event.start?.dateTime || '')} – {formatTime(event.end?.dateTime || '')}
                                         </span>
                                     </div>
                                 </div>
                                 {event.location && (
-                                    <div className="text-sm text-slate-500 max-w-xs text-right">
+                                    <span className="text-xs text-[#061E29]/40 truncate max-w-[120px]">
                                         {event.location}
-                                    </div>
+                                    </span>
                                 )}
                             </div>
                         </div>

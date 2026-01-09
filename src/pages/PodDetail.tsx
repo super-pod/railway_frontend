@@ -251,6 +251,10 @@ const PodDetail = () => {
     const allowAddGoals = showIdleActions && (pod.type || '').toLowerCase() !== 'meeting';
     const canEditGoals = isOwner && !isClosed;
     const canDeleteGoals = canEditGoals && showIdleActions && allowAddGoals;
+    const calendarResults = pod?.calendar_event_results;
+    const calendarCreated = calendarResults?.created || [];
+    const calendarFailed = calendarResults?.failed || [];
+    const showCalendarResults = Boolean(calendarResults && (calendarCreated.length || calendarFailed.length));
 
     return (
         <div className="p-6 max-w-4xl mx-auto">
@@ -599,6 +603,21 @@ const PodDetail = () => {
                                 </pre>
                             </div>
                         ))}
+                    </div>
+                )}
+                {showCalendarResults && (
+                    <div className="space-y-3">
+                        <h3 className="text-xs uppercase tracking-widest text-[#5F9598]">Calendar Delivery</h3>
+                        {calendarCreated.length > 0 && (
+                            <div className="text-xs text-green-700">
+                                Delivered to: {calendarCreated.map((item: any) => item.email).join(', ')}
+                            </div>
+                        )}
+                        {calendarFailed.length > 0 && (
+                            <div className="text-xs text-red-600">
+                                Failed for: {calendarFailed.map((item: any) => item.email).join(', ')}
+                            </div>
+                        )}
                     </div>
                 )}
 

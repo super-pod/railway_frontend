@@ -15,6 +15,11 @@ const PodDetail = () => {
     const [copyStatus, setCopyStatus] = useState<'idle' | 'copied' | 'error'>('idle');
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
+    const [huntStatus, setHuntStatus] = useState<'idle' | 'running' | 'done' | 'error'>('idle');
+    const [huntError, setHuntError] = useState<string | null>(null);
+    const [savingInstructions, setSavingInstructions] = useState(false);
+    const [instructionEdits, setInstructionEdits] = useState<Record<number, string>>({});
+    const [closingPod, setClosingPod] = useState(false);
 
     useEffect(() => {
         const fetchPod = async () => {
@@ -27,6 +32,23 @@ const PodDetail = () => {
                 setGoals(goalsRes.data);
                 setInviteEmails(podRes.data?.invite_emails || []);
                 setInviteJoinedEmails(podRes.data?.invite_joined_emails || []);
+                if (podRes.data?.status === 'running') {
+                    setHuntStatus('running');
+                } else if (podRes.data?.status === 'pending_review' || podRes.data?.status === 'closed') {
+                    setHuntStatus('done');
+                } else {
+                    setHuntStatus('idle');
+                }
+                setInstructionEdits((prev) => {
+                    if (Object.keys(prev).length > 0) {
+                        return prev;
+                    }
+                    const next: Record<number, string> = {};
+                    goalsRes.data.forEach((goal: any) => {
+                        next[goal.id] = goal.goal_instructions || '';
+                    });
+                    return next;
+                });
             } catch (err) {
                 console.error(err);
             } finally {
@@ -139,15 +161,105 @@ const PodDetail = () => {
         }
     };
 
+    const formatGoalValue = (value: string | null) => {
+        if (!value) return '';
+        try {
+            return JSON.stringify(JSON.parse(value), null, 2);
+        } catch {
+            return value;
+        }
+    };
+
+    const saveInstructions = async () => {
+        if (!isOwner) {
+            return;
+        }
+        setSavingInstructions(true);
+        try {
+            const updates = goals.filter((goal) => instructionEdits[goal.id] !== goal.goal_instructions);
+            for (const goal of updates) {
+                await apiClient.patch(`/goals/${goal.id}`, { instructions: instructionEdits[goal.id] || '' });
+            }
+            const refreshed = await apiClient.get(`/goals/${podId}`);
+            setGoals(refreshed.data);
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setSavingInstructions(false);
+        }
+    };
+
+    const startHunt = async () => {
+        if (!podId || !isOwner) {
+            return;
+        }
+        if (pod?.status === 'closed') {
+            return;
+        }
+        setHuntStatus('running');
+        setHuntError(null);
+        try {
+            const res = await apiClient.post(`/pods/${podId}/hunt`);
+            const nextGoals = res.data?.goals || [];
+            setGoals(nextGoals);
+            setPod((prev: any) => ({ ...prev, status: res.data?.status || 'pending_review' }));
+            const hasAllValues = nextGoals.length > 0
+                && nextGoals.every((goal: any) => Boolean(goal.goal_value));
+            setHuntStatus(hasAllValues ? 'done' : 'running');
+        } catch (err: any) {
+            console.error(err);
+            const message = err.response?.data?.detail || 'Failed to start the hunt.';
+            setHuntError(message);
+            setHuntStatus('error');
+        }
+    };
+
+    const closePod = async () => {
+        if (!podId || !isOwner) {
+            return;
+        }
+        setClosingPod(true);
+        try {
+            const res = await apiClient.post(`/pods/${podId}/close`);
+            setPod(res.data);
+            window.location.assign('/dashboard');
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setClosingPod(false);
+        }
+    };
+
+    const handleInstructionChange = (goalId: number, value: string) => {
+        setInstructionEdits((prev) => ({ ...prev, [goalId]: value }));
+    };
+
     const normalizedInvites = inviteEmails.map(email => email.toLowerCase());
     const normalizedJoined = inviteJoinedEmails.map(email => email.toLowerCase());
     const allInviteesJoined = normalizedInvites.length === 0
         || normalizedInvites.every(email => normalizedJoined.includes(email));
+    const podStatus = pod.status || 'idle';
+    const isClosed = podStatus === 'closed';
+    const allGoalsHaveValues = goals.length > 0 && goals.every(goal => Boolean(goal.goal_value));
+    const showResults = allGoalsHaveValues;
+    const showPostHuntActions = isOwner && !isClosed && (podStatus === 'pending_review' || allGoalsHaveValues);
 
     return (
         <div className="p-6 max-w-4xl mx-auto">
             <div className="mb-6">
-                <h1 className="text-2xl font-semibold text-[#061E29] mb-1">Pod Details</h1>
+                <div className="flex items-center justify-between">
+                    <h1 className="text-2xl font-semibold text-[#061E29] mb-1">Pod Details</h1>
+                    <span className={`text-xs px-2 py-1 rounded ${podStatus === 'running'
+                            ? 'bg-blue-100 text-blue-700'
+                            : podStatus === 'pending_review'
+                                ? 'bg-amber-100 text-amber-700'
+                                : podStatus === 'closed'
+                                    ? 'bg-green-100 text-green-700'
+                                    : 'bg-[#F3F4F4] text-[#061E29]/60'
+                        }`}>
+                        {podStatus.replace('_', ' ')}
+                    </span>
+                </div>
                 <div className="card p-5 mt-4">
                     <p className="text-base text-[#061E29]">{pod.description}</p>
                 </div>
@@ -256,6 +368,11 @@ const PodDetail = () => {
                             <div className="flex-1">
                                 <h3 className="text-sm font-medium text-[#061E29] mb-1">{goal.goal_name}</h3>
                                 <p className="text-xs text-[#061E29]/60">{goal.goal_instructions}</p>
+                                {goal.goal_value && (
+                                    <pre className="mt-2 text-[11px] text-[#061E29]/80 whitespace-pre-wrap bg-[#F3F4F4] rounded p-2">
+                                        {formatGoalValue(goal.goal_value)}
+                                    </pre>
+                                )}
                             </div>
                             <div className="flex items-center ml-4">
                                 {goal.goal_status === 'completed' ? (
@@ -275,9 +392,105 @@ const PodDetail = () => {
                 </div>
             </div>
 
-            <button className="btn btn-primary w-full" disabled={!allInviteesJoined}>
-                Start the hunt
-            </button>
+            <div className="card p-5 space-y-4">
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h2 className="text-sm font-medium text-[#061E29]">Start the Hunt</h2>
+                        <p className="text-xs text-[#061E29]/60">
+                            Combine calendars, Orca instructions, and pod goals to fill goal outputs.
+                        </p>
+                    </div>
+                    <button
+                        className="btn btn-primary"
+                        disabled={!allInviteesJoined || !isOwner || huntStatus === 'running' || isClosed}
+                        onClick={startHunt}
+                    >
+                        {huntStatus === 'running' ? 'Running...' : 'Start the hunt'}
+                    </button>
+                </div>
+
+                {!allInviteesJoined && (
+                    <p className="text-xs text-amber-600">
+                        Waiting for all invitees to join before starting.
+                    </p>
+                )}
+                {isClosed && (
+                    <p className="text-xs text-[#061E29]/60">
+                        Pod is closed. Reopen is not available.
+                    </p>
+                )}
+
+                {huntStatus === 'running' && (
+                    <div className="flex items-center gap-3 text-sm text-[#061E29]/70">
+                        <div className="spinner"></div>
+                        <span>Pod is running. Gathering calendars and instructions...</span>
+                    </div>
+                )}
+
+                {huntError && (
+                    <p className="text-xs text-red-600">{huntError}</p>
+                )}
+
+                {showResults && (
+                    <div className="space-y-3">
+                        <h3 className="text-xs uppercase tracking-widest text-[#5F9598]">Goal Outputs</h3>
+                        {goals.map(goal => (
+                            <div key={`result-${goal.id}`} className="rounded border border-[#061E29]/10 bg-white p-3">
+                                <div className="text-xs font-medium text-[#061E29] mb-2">{goal.goal_name}</div>
+                                <pre className="text-[11px] text-[#061E29]/80 whitespace-pre-wrap">
+                                    {formatGoalValue(goal.goal_value) || 'No output yet.'}
+                                </pre>
+                            </div>
+                        ))}
+                    </div>
+                )}
+
+                {showPostHuntActions && (
+                    <div className="space-y-3">
+                        <h3 className="text-xs uppercase tracking-widest text-[#5F9598]">Edit Goal Instructions</h3>
+                        {goals.map(goal => (
+                            <div key={`edit-${goal.id}`} className="space-y-2">
+                                <div className="text-xs font-medium text-[#061E29]">{goal.goal_name}</div>
+                                <textarea
+                                    className="w-full"
+                                    rows={2}
+                                    value={instructionEdits[goal.id] ?? ''}
+                                    onChange={(e) => handleInstructionChange(goal.id, e.target.value)}
+                                />
+                            </div>
+                        ))}
+                        <div className="flex flex-wrap gap-3">
+                            <button
+                                type="button"
+                                className="btn btn-secondary"
+                                disabled={savingInstructions}
+                                onClick={saveInstructions}
+                            >
+                                {savingInstructions ? 'Saving...' : 'Save Instructions'}
+                            </button>
+                            <button
+                                type="button"
+                                className="btn btn-primary"
+                                disabled={savingInstructions || huntStatus === 'running' || isClosed}
+                                onClick={async () => {
+                                    await saveInstructions();
+                                    await startHunt();
+                                }}
+                            >
+                                Rerun Hunt
+                            </button>
+                            <button
+                                type="button"
+                                className="btn btn-secondary"
+                                disabled={closingPod}
+                                onClick={closePod}
+                            >
+                                {closingPod ? 'Closing...' : 'Save & Close'}
+                            </button>
+                        </div>
+                    </div>
+                )}
+            </div>
         </div>
     );
 };

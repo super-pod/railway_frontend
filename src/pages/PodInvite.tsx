@@ -53,6 +53,9 @@ const PodInvite = () => {
         if (!pod || !profile?.is_calendar_synced || isJoined || joining) {
             return;
         }
+        if (pod.status === 'closed') {
+            return;
+        }
         setJoining(true);
         apiClient.post(`/pods/${pod.id}/join`)
             .then(res => {
@@ -93,7 +96,19 @@ const PodInvite = () => {
             </div>
 
             <div className="card p-5">
-                <h2 className="text-sm font-medium text-[#061E29] mb-2">Pod Details</h2>
+                <div className="flex items-center justify-between mb-2">
+                    <h2 className="text-sm font-medium text-[#061E29]">Pod Details</h2>
+                    <span className={`text-xs px-2 py-1 rounded ${pod?.status === 'running'
+                            ? 'bg-blue-100 text-blue-700'
+                            : pod?.status === 'pending_review'
+                                ? 'bg-amber-100 text-amber-700'
+                                : pod?.status === 'closed'
+                                    ? 'bg-green-100 text-green-700'
+                                    : 'bg-[#F3F4F4] text-[#061E29]/60'
+                        }`}>
+                        {pod?.status ? pod.status.replace('_', ' ') : 'idle'}
+                    </span>
+                </div>
                 <p className="text-base text-[#061E29]">{pod?.description || 'Pod invitation'}</p>
             </div>
 
@@ -105,9 +120,13 @@ const PodInvite = () => {
                     </span>
                 </div>
                 <p className="text-xs text-[#061E29]/60">
-                    {isJoined ? 'You have joined this pod.' : 'Sync your calendar to join the pod.'}
+                    {pod?.status === 'closed'
+                        ? 'This pod has been closed by the owner.'
+                        : isJoined
+                            ? 'You have joined this pod.'
+                            : 'Sync your calendar to join the pod.'}
                 </p>
-                {!profile?.is_calendar_synced && (
+                {pod?.status !== 'closed' && !profile?.is_calendar_synced && (
                     <button
                         type="button"
                         className="btn btn-primary w-full"
@@ -116,13 +135,22 @@ const PodInvite = () => {
                         Sync Calendar
                     </button>
                 )}
-                {profile?.is_calendar_synced && (
+                {pod?.status !== 'closed' && profile?.is_calendar_synced && (
                     <button
                         type="button"
                         className="btn btn-secondary w-full"
                         onClick={() => navigate(`/pods/${pod.id}`)}
                     >
                         Open Pod
+                    </button>
+                )}
+                {pod?.status === 'closed' && (
+                    <button
+                        type="button"
+                        className="btn btn-secondary w-full"
+                        onClick={() => navigate('/dashboard')}
+                    >
+                        Back to Dashboard
                     </button>
                 )}
             </div>

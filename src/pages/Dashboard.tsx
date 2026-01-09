@@ -6,12 +6,27 @@ import { Plus, Users } from 'lucide-react';
 const Dashboard = () => {
     const [pods, setPods] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
+
+    const fetchPods = async (isRefresh = false) => {
+        if (isRefresh) {
+            setRefreshing(true);
+        } else {
+            setLoading(true);
+        }
+        try {
+            const res = await apiClient.get('/pods');
+            setPods(res.data);
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setLoading(false);
+            setRefreshing(false);
+        }
+    };
 
     useEffect(() => {
-        apiClient.get('/pods')
-            .then(res => setPods(res.data))
-            .catch(err => console.error(err))
-            .finally(() => setLoading(false));
+        fetchPods();
     }, []);
 
     if (loading) {
@@ -30,10 +45,20 @@ const Dashboard = () => {
                     <h1 className="text-2xl font-semibold text-[#061E29] mb-1">Pods</h1>
                     <p className="text-sm text-[#061E29]/60">Manage your coordination groups</p>
                 </div>
-                <Link to="/pods/create" className="btn btn-primary">
-                    <Plus className="w-4 h-4" />
-                    New Pod
-                </Link>
+                <div className="flex items-center gap-3">
+                    <button
+                        type="button"
+                        onClick={() => fetchPods(true)}
+                        disabled={refreshing || loading}
+                        className="btn btn-secondary"
+                    >
+                        {refreshing ? 'Refreshing...' : 'Refresh'}
+                    </button>
+                    <Link to="/pods/create" className="btn btn-primary">
+                        <Plus className="w-4 h-4" />
+                        New Pod
+                    </Link>
+                </div>
             </div>
 
             {/* Pods Grid */}
@@ -49,7 +74,19 @@ const Dashboard = () => {
                                 <Users className="text-[#5F9598] w-5 h-5" />
                             </div>
                             <div className="flex-1 min-w-0">
-                                <h2 className="text-base font-medium text-[#061E29] mb-1">Pod #{pod.id}</h2>
+                                <div className="flex items-center justify-between gap-2 mb-1">
+                                    <h2 className="text-base font-medium text-[#061E29]">Pod #{pod.id}</h2>
+                                    <span className={`text-[10px] px-2 py-0.5 rounded ${pod.status === 'running'
+                                            ? 'bg-blue-100 text-blue-700'
+                                            : pod.status === 'pending_review'
+                                                ? 'bg-amber-100 text-amber-700'
+                                                : pod.status === 'closed'
+                                                    ? 'bg-green-100 text-green-700'
+                                                    : 'bg-[#F3F4F4] text-[#061E29]/60'
+                                        }`}>
+                                        {(pod.status || 'idle').replace('_', ' ')}
+                                    </span>
+                                </div>
                                 <p className="text-xs text-[#061E29]/60 line-clamp-2">
                                     {pod.description || 'No description'}
                                 </p>

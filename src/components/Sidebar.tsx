@@ -9,9 +9,12 @@ const Sidebar = () => {
 
     const menuItems = [
         { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
-        { icon: Calendar, label: 'Schedule', path: '/dashboard/schedule' },
         { icon: Users, label: 'Pods', path: '/dashboard' },
         { icon: Settings, label: 'Settings', path: '/setup-orca' },
+    ];
+
+    const serviceItems = [
+        { icon: Calendar, label: 'Calendar', path: '/dashboard/schedule' }
     ];
 
     return (
@@ -28,30 +31,63 @@ const Sidebar = () => {
                 </div>
 
                 {/* Navigation */}
-                <nav className="flex-1 space-y-1">
-                    {menuItems.map((item) => {
-                        const isActive = location.pathname === item.path;
-                        const Icon = item.icon;
-                        const isDisabled = !isCalendarSynced && item.path !== '/sync-calendar' && item.path !== '/dashboard';
+                <nav className="flex-1 space-y-6">
+                    <div className="space-y-1">
+                        {menuItems.map((item) => {
+                            const isActive = location.pathname === item.path;
+                            const Icon = item.icon;
+                            const isDisabled = !isCalendarSynced && item.path !== '/sync-calendar' && item.path !== '/dashboard';
 
-                        return (
-                            <Link
-                                key={item.path}
-                                to={isDisabled ? '#' : item.path}
-                                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${isActive
-                                    ? 'bg-[#1D546D] text-white'
-                                    : isDisabled
-                                        ? 'opacity-30 cursor-not-allowed text-gray-500'
-                                        : 'text-gray-400 hover:bg-[#1D546D]/50 hover:text-white'
-                                    }`}
-                                onClick={(e) => isDisabled && e.preventDefault()}
-                            >
-                                <Icon className="w-4 h-4" strokeWidth={2} />
-                                <span className="text-sm font-medium">{item.label}</span>
-                                {isActive && <div className="ml-auto accent-dot" />}
-                            </Link>
-                        );
-                    })}
+                            return (
+                                <Link
+                                    key={item.path}
+                                    to={isDisabled ? '#' : item.path}
+                                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${isActive
+                                        ? 'bg-[#1D546D] text-white'
+                                        : isDisabled
+                                            ? 'opacity-30 cursor-not-allowed text-gray-500'
+                                            : 'text-gray-400 hover:bg-[#1D546D]/50 hover:text-white'
+                                        }`}
+                                    onClick={(e) => isDisabled && e.preventDefault()}
+                                >
+                                    <Icon className="w-4 h-4" strokeWidth={2} />
+                                    <span className="text-sm font-medium">{item.label}</span>
+                                    {isActive && <div className="ml-auto accent-dot" />}
+                                </Link>
+                            );
+                        })}
+                    </div>
+
+                    <div>
+                        <div className="px-3 text-xs uppercase tracking-widest text-[#5F9598]/70 mb-2">
+                            Services
+                        </div>
+                        <div className="space-y-1">
+                            {serviceItems.map((item) => {
+                                const isActive = location.pathname === item.path;
+                                const Icon = item.icon;
+                                const isDisabled = !isCalendarSynced && item.path !== '/sync-calendar' && item.path !== '/dashboard';
+
+                                return (
+                                    <Link
+                                        key={item.path}
+                                        to={isDisabled ? '#' : item.path}
+                                        className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${isActive
+                                            ? 'bg-[#1D546D] text-white'
+                                            : isDisabled
+                                                ? 'opacity-30 cursor-not-allowed text-gray-500'
+                                                : 'text-gray-400 hover:bg-[#1D546D]/50 hover:text-white'
+                                            }`}
+                                        onClick={(e) => isDisabled && e.preventDefault()}
+                                    >
+                                        <Icon className="w-4 h-4" strokeWidth={2} />
+                                        <span className="text-sm font-medium">{item.label}</span>
+                                        {isActive && <div className="ml-auto accent-dot" />}
+                                    </Link>
+                                );
+                            })}
+                        </div>
+                    </div>
                 </nav>
 
                 {/* User Profile */}
@@ -74,7 +110,7 @@ const Sidebar = () => {
 
             {/* Mobile Menu */}
             <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-[#061E29] border-t border-white/5 px-4 py-3 flex justify-around items-center z-50">
-                {menuItems.map((item) => {
+                {[...menuItems, ...serviceItems].map((item) => {
                     const isActive = location.pathname === item.path;
                     const Icon = item.icon;
                     return (

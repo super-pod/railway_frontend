@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import apiClient from '../lib/apiClient';
 import { Waves } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { signInWithGoogle } from '../lib/firebaseClient';
+import { signInWithGoogleCalendar } from '../lib/firebaseClient';
 
 const SyncCalendar = () => {
     const [loading, setLoading] = useState(false);
@@ -13,7 +13,7 @@ const SyncCalendar = () => {
     const handleSync = async () => {
         setLoading(true);
         try {
-            const { user, accessToken } = await signInWithGoogle();
+            const { accessToken } = await signInWithGoogleCalendar();
 
             if (accessToken) {
                 await apiClient.post('/calendar/sync', {
@@ -21,7 +21,7 @@ const SyncCalendar = () => {
                     token: accessToken
                 });
                 await refreshProfile();
-                navigate('/dashboard/schedule');
+                navigate('/dashboard');
             } else {
                 alert("Failed to get Google Calendar access. Please make sure you grant the requested permissions.");
             }

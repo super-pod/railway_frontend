@@ -12,18 +12,16 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
-export const googleProvider = new GoogleAuthProvider();
-googleProvider.addScope('https://www.googleapis.com/auth/calendar.readonly');
-googleProvider.addScope('https://www.googleapis.com/auth/calendar');
 
-googleProvider.setCustomParameters({
-    prompt: 'consent'
-});
+const loginProvider = new GoogleAuthProvider();
+const calendarProvider = new GoogleAuthProvider();
+calendarProvider.addScope('https://www.googleapis.com/auth/calendar.readonly');
+calendarProvider.addScope('https://www.googleapis.com/auth/calendar');
 
 
 export const signInWithGoogle = async () => {
     try {
-        const result = await signInWithPopup(auth, googleProvider);
+        const result = await signInWithPopup(auth, loginProvider);
         const credential = GoogleAuthProvider.credentialFromResult(result);
         const accessToken = credential?.accessToken;
 
@@ -33,6 +31,22 @@ export const signInWithGoogle = async () => {
         };
     } catch (error) {
         console.error("Error signing in with Google", error);
+        throw error;
+    }
+};
+
+export const signInWithGoogleCalendar = async () => {
+    try {
+        const result = await signInWithPopup(auth, calendarProvider);
+        const credential = GoogleAuthProvider.credentialFromResult(result);
+        const accessToken = credential?.accessToken;
+
+        return {
+            user: result.user,
+            accessToken
+        };
+    } catch (error) {
+        console.error("Error signing in with Google Calendar", error);
         throw error;
     }
 };

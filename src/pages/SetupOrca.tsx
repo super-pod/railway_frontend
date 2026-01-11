@@ -11,7 +11,7 @@ const SetupOrca = () => {
     const [isEditing, setIsEditing] = useState(false);
     const navigate = useNavigate();
     const location = useLocation();
-    const { refreshProfile } = useAuth();
+    const { refreshProfile, profile } = useAuth();
 
     useEffect(() => {
         const loadOrca = async () => {
@@ -64,54 +64,77 @@ const SetupOrca = () => {
                 <p className="text-sm text-[#061E29]/60">Edit your Orca instructions</p>
             </div>
 
-            <div className="card p-6 space-y-4">
-                {loading && (
-                    <div className="text-xs text-[#061E29]/60">
-                        Loading instructions...
+            <div className="space-y-6">
+                <div className="card p-6 space-y-4">
+                    {loading && (
+                        <div className="text-xs text-[#061E29]/60">
+                            Loading instructions...
+                        </div>
+                    )}
+                    <div>
+                        <label className="block text-sm font-medium text-[#061E29] mb-2">
+                            Orca Instructions
+                        </label>
+                        <p className="text-xs text-[#061E29]/60 mb-3">
+                            Describe how your Orca should make decisions for scheduling and coordination.
+                        </p>
+                        <textarea
+                            className="w-full"
+                            rows={4}
+                            value={pref}
+                            onChange={(e) => setPref(e.target.value)}
+                            placeholder="Example: prioritize afternoons, avoid lunch hours, allow 30-min slots..."
+                            disabled={!isEditing}
+                        />
                     </div>
-                )}
-                <div>
-                    <label className="block text-sm font-medium text-[#061E29] mb-2">
-                        Orca Instructions
-                    </label>
-                    <p className="text-xs text-[#061E29]/60 mb-3">
-                        Describe how your Orca should make decisions for scheduling and coordination.
-                    </p>
-                    <textarea
-                        className="w-full"
-                        rows={4}
-                        value={pref}
-                        onChange={(e) => setPref(e.target.value)}
-                        placeholder="Example: prioritize afternoons, avoid lunch hours, allow 30-min slots..."
-                        disabled={!isEditing}
-                    />
-                </div>
-                <div className="flex items-center gap-3">
-                    {!isEditing ? (
+                    <div className="flex items-center gap-3">
+                        {!isEditing ? (
+                            <button
+                                type="button"
+                                onClick={() => setIsEditing(true)}
+                                className="btn btn-primary w-full"
+                                disabled={loading}
+                            >
+                                Edit Instructions
+                            </button>
+                        ) : (
+                            <button
+                                onClick={handleSave}
+                                className="btn btn-primary w-full"
+                                disabled={loading || saving || !hasChanges || !pref.trim()}
+                            >
+                                {saving ? 'Saving...' : 'Save Instructions'}
+                            </button>
+                        )}
                         <button
                             type="button"
-                            onClick={() => setIsEditing(true)}
-                            className="btn btn-primary w-full"
-                            disabled={loading}
+                            className="btn btn-primary w-full bg-[#5F9598]/20 text-[#5F9598] border border-[#5F9598]/30 hover:bg-[#5F9598]/30"
+                            disabled
                         >
-                            Edit Instructions
+                            Add another Orca
                         </button>
-                    ) : (
+                    </div>
+                </div>
+                <div className="card p-6 space-y-4">
+                    <div>
+                        <h2 className="text-sm font-semibold text-[#061E29] mb-1">Calendar</h2>
+                        <p className="text-xs text-[#061E29]/60">
+                            Reconnect Google Calendar if your permissions change.
+                        </p>
+                    </div>
+                    <div className="flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-2 text-xs text-[#061E29]/60">
+                            <span className={`w-1.5 h-1.5 rounded-full ${profile?.is_calendar_synced ? 'bg-[#5F9598]' : 'bg-amber-400'}`} />
+                            {profile?.is_calendar_synced ? 'Synced' : 'Not synced'}
+                        </div>
                         <button
-                            onClick={handleSave}
-                            className="btn btn-primary w-full"
-                            disabled={loading || saving || !hasChanges || !pref.trim()}
+                            type="button"
+                            className="btn btn-secondary"
+                            onClick={() => navigate('/sync-calendar', { state: { from: location } })}
                         >
-                            {saving ? 'Saving...' : 'Save Instructions'}
+                            Resync Calendar
                         </button>
-                    )}
-                    <button
-                        type="button"
-                        className="btn btn-primary w-full bg-[#5F9598]/20 text-[#5F9598] border border-[#5F9598]/30 hover:bg-[#5F9598]/30"
-                        disabled
-                    >
-                        Add another Orca
-                    </button>
+                    </div>
                 </div>
             </div>
         </div>

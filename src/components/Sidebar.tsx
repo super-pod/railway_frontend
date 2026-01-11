@@ -1,9 +1,11 @@
-import { useLocation, Link } from 'react-router-dom';
-import { Calendar, Users, Settings, LayoutDashboard, Waves } from 'lucide-react';
+import { useLocation, Link, useNavigate } from 'react-router-dom';
+import { Calendar, Users, Settings, LayoutDashboard, Waves, LogOut } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { signOutUser } from '../lib/firebaseClient';
 
 const Sidebar = () => {
     const location = useLocation();
+    const navigate = useNavigate();
     const { profile } = useAuth();
     const isCalendarSynced = profile?.is_calendar_synced;
 
@@ -15,6 +17,15 @@ const Sidebar = () => {
     const serviceItems = [
         { icon: Calendar, label: 'Calendar', path: '/dashboard/schedule' }
     ];
+
+    const handleLogout = async () => {
+        try {
+            await signOutUser();
+            navigate('/login');
+        } catch (error) {
+            console.error('Logout failed', error);
+        }
+    };
 
     return (
         <>
@@ -103,6 +114,14 @@ const Sidebar = () => {
                                 {isCalendarSynced ? 'Synced' : 'Sync required'}
                             </span>
                         </div>
+                        <button
+                            type="button"
+                            onClick={handleLogout}
+                            className="mt-4 w-full flex items-center justify-center gap-2 text-xs font-medium text-white/70 border border-white/10 rounded-lg px-3 py-2 hover:text-white hover:border-white/30"
+                        >
+                            <LogOut className="w-3.5 h-3.5" strokeWidth={2} />
+                            Log out
+                        </button>
                     </div>
                 </div>
             </aside>
@@ -118,6 +137,9 @@ const Sidebar = () => {
                         </Link>
                     );
                 })}
+                <button type="button" onClick={handleLogout} className="p-2">
+                    <LogOut className="w-5 h-5 text-gray-500" strokeWidth={2} />
+                </button>
             </div>
         </>
     );

@@ -16,4 +16,21 @@ apiClient.interceptors.request.use(async (config) => {
     return Promise.reject(error);
 });
 
+apiClient.interceptors.response.use((response) => response, async (error) => {
+    const status = error?.response?.status;
+    const originalRequest = error?.config;
+    if (status === 401 && auth.currentUser && originalRequest && !(originalRequest as any)._retry) {
+        (originalRequest as any)._retry = true;
+        try {
+            const token = await auth.currentUser.getIdToken(true);
+            originalRequest.headers = originalRequest.headers || {};
+            originalRequest.headers.Authorization = `Bearer ${token}`;
+            return apiClient(originalRequest);
+        } catch (refreshError) {
+            return Promise.reject(refreshError);
+        }
+    }
+    return Promise.reject(error);
+});
+
 export default apiClient;

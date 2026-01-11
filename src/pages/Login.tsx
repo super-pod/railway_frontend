@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { signInWithGoogle } from '../lib/firebaseClient';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -7,10 +7,23 @@ import { Waves } from 'lucide-react';
 const Login = () => {
     const navigate = useNavigate();
     const location = useLocation();
-    const { user, profile } = useAuth();
+    const { user, profile, loading, refreshProfile } = useAuth();
+    const [profileRetry, setProfileRetry] = useState(false);
 
     useEffect(() => {
-        if (user && profile) {
+        if (!user || loading) {
+            return;
+        }
+        if (!profile && !profileRetry) {
+            setProfileRetry(true);
+            refreshProfile().catch((error) => console.error('Failed to refresh profile', error));
+            return;
+        }
+        if (!profile && profileRetry) {
+            navigate('/dashboard');
+            return;
+        }
+        if (profile) {
             const from = (location.state as any)?.from?.pathname;
             if (!profile.has_orca) {
                 navigate('/setup-orca', { state: { from: (location.state as any)?.from || location } });
@@ -22,41 +35,41 @@ const Login = () => {
                 navigate('/sync-calendar', { state: { from: (location.state as any)?.from || location } });
             }
         }
-    }, [user, profile, navigate, location]);
+    }, [user, profile, loading, profileRetry, refreshProfile, navigate, location]);
 
     const handleLogin = async () => {
         try {
             await signInWithGoogle();
         } catch (error) {
-            console.error("Login failed", error);
+            console.error('Login failed', error);
         }
     };
 
     return (
-        <div className="min-h-screen flex bg-[#F3F4F4]">
-            {/* Left Side: Login Form */}
-            <div className="w-full lg:w-1/2 flex flex-col justify-between p-8 lg:p-16 bg-[#061E29] text-white">
+        <div className="min-h-screen flex bg-[#F7F6F2]">
+            {/* Left Side: Entry */}
+            <div className="w-full lg:w-1/2 flex flex-col justify-between p-8 lg:p-16 border-b lg:border-b-0 lg:border-r border-[#061E29]/10">
                 <div className="max-w-md mx-auto w-full">
                     {/* Logo */}
-                    <div className="flex items-center gap-2.5 mb-20">
-                        <div className="w-10 h-10 bg-[#5F9598] rounded-lg flex items-center justify-center">
-                            <Waves className="text-[#061E29] w-5 h-5" strokeWidth={2.5} />
+                    <div className="flex items-center gap-2.5 mb-16">
+                        <div className="w-10 h-10 bg-[#061E29] rounded-lg flex items-center justify-center">
+                            <Waves className="text-[#F7F6F2] w-5 h-5" strokeWidth={2.5} />
                         </div>
-                        <span className="text-xl font-semibold tracking-tight">Orca</span>
+                        <span className="text-xl font-semibold tracking-tight text-[#061E29]">Orca</span>
                     </div>
 
                     {/* Heading */}
-                    <h1 className="text-4xl font-semibold mb-3 leading-tight text-white">
-                        Sync your team's rhythm
+                    <h1 className="text-3xl lg:text-4xl font-semibold mb-4 leading-tight text-[#061E29]">
+                        Orca runs decisions for you.
                     </h1>
-                    <p className="text-white/70 mb-12 text-base">
-                        Intelligent scheduling for modern teams
+                    <p className="text-[#061E29]/70 mb-10 text-base">
+                        Create an orca. Others create theirs. They negotiate and commit without you in the loop.
                     </p>
 
                     {/* Login Button */}
                     <button
                         onClick={handleLogin}
-                        className="flex items-center justify-center w-full bg-[#1D546D] py-3.5 px-6 rounded-lg hover:bg-[#5F9598] transition-all gap-3 font-medium shadow-sm"
+                        className="flex items-center justify-center w-full bg-[#1D546D] py-3.5 px-6 rounded-lg hover:bg-[#17475C] transition-all gap-3 font-medium text-white"
                     >
                         <img
                             src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
@@ -65,67 +78,90 @@ const Login = () => {
                         />
                         Continue with Google
                     </button>
-
-                    {/* About Section */}
-                    <div className="mt-16 p-6 bg-white/5 rounded-lg border border-white/10">
-                        <div className="flex items-center gap-2 mb-3">
-                            <div className="accent-border h-6 pl-2">
-                                <h3 className="text-base font-medium text-white">About Orca</h3>
-                            </div>
-                        </div>
-                        <p className="text-white/70 text-sm leading-relaxed">
-                            Orca analyzes your team's availability patterns to find optimal meeting times
-                            that respect everyone's focus hours.
-                        </p>
-                    </div>
+                    <p className="text-xs text-[#061E29]/50 mt-3">
+                        Calendar access is required to create or join pods.
+                    </p>
                 </div>
 
                 {/* Footer Links */}
-                <div className="flex gap-6 text-xs text-white/40 mt-12">
-                    <a href="/privacy" className="hover:text-[#5F9598] transition-colors">Privacy</a>
-                    <a href="/terms" className="hover:text-[#5F9598] transition-colors">Terms</a>
-                    <a href="mailto:hello@orca.app" className="hover:text-[#5F9598] transition-colors">Contact</a>
+                <div className="flex gap-6 text-xs text-[#061E29]/40 mt-12">
+                    <a href="/privacy" className="hover:text-[#061E29] transition-colors">Privacy</a>
+                    <a href="/terms" className="hover:text-[#061E29] transition-colors">Terms</a>
+                    <a href="mailto:hello@orca.app" className="hover:text-[#061E29] transition-colors">Contact</a>
                 </div>
             </div>
 
-            {/* Right Side: Image/Visual */}
-            <div className="hidden lg:block lg:w-1/2 relative overflow-hidden bg-[#F3F4F4]">
-                <div className="absolute inset-0 flex items-center justify-center p-16">
-                    <div className="relative w-full h-full rounded-2xl overflow-hidden shadow-lg border border-white/50 bg-gradient-to-br from-[#E8F1F2] via-white to-[#C7DDE0]">
-                        <div className="absolute inset-0">
-                            <div className="absolute -top-20 -right-16 h-64 w-64 rounded-full bg-[#5F9598]/25 blur-2xl"></div>
-                            <div className="absolute bottom-10 -left-10 h-72 w-72 rounded-full bg-[#1D546D]/15 blur-3xl"></div>
+            {/* Right Side: System Diagram */}
+            <div className="hidden lg:flex lg:w-1/2 bg-[#F7F6F2] items-center justify-center">
+                <div className="w-full max-w-xl px-14 py-16">
+                    <div className="text-[11px] uppercase tracking-[0.2em] text-[#061E29]/40 mb-6">
+                        System Model
+                    </div>
+                    <div className="space-y-8 divide-y divide-[#061E29]/10">
+                        <div className="pt-0">
+                            <div className="text-[11px] uppercase tracking-wide text-[#061E29]/40">Agents</div>
+                            <div className="mt-3 flex items-start justify-between gap-6">
+                                <div className="space-y-2">
+                                    <div className="text-base font-semibold text-[#061E29]">Orcas</div>
+                                    <p className="text-sm text-[#061E29]/60">You create an orca with preferences, constraints, and authority.</p>
+                                    <p className="text-sm text-[#061E29]/60">Others bring their own orcas.</p>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <div className="w-3 h-3 rounded-full border border-[#061E29]/30 bg-[#FDFCF9]" />
+                                    <div className="w-3 h-3 rounded-full border border-[#061E29]/30 bg-[#FDFCF9]" />
+                                    <div className="w-3 h-3 rounded-full border border-[#061E29]/30 bg-[#FDFCF9]" />
+                                </div>
+                            </div>
                         </div>
-                        <div className="absolute inset-0 p-10">
-                            <div className="grid gap-4">
-                                <div className="bg-white/90 backdrop-blur rounded-xl p-5 shadow-sm border border-white/60">
-                                    <p className="text-xs uppercase tracking-wide text-[#061E29]/50">Today</p>
-                                    <p className="text-lg font-semibold text-[#061E29] mt-1">Team availability summary</p>
-                                    <div className="mt-4 h-2 w-full rounded-full bg-[#061E29]/10 overflow-hidden">
-                                        <div className="h-full w-2/3 bg-[#5F9598] rounded-full"></div>
+
+                        <div className="pt-8">
+                            <div className="text-[11px] uppercase tracking-wide text-[#061E29]/40">Coordination</div>
+                            <div className="mt-3 flex items-start justify-between gap-6">
+                                <div className="space-y-2">
+                                    <div className="text-base font-semibold text-[#061E29]">Pods</div>
+                                    <p className="text-sm text-[#061E29]/60">Orcas form pods to solve a shared goal.</p>
+                                    <p className="text-sm text-[#061E29]/60">Context is shared only inside the pod.</p>
+                                </div>
+                                <div className="rounded-xl border border-[#061E29]/15 bg-[#FDFCF9] px-3 py-3">
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-3 h-3 rounded-full border border-[#061E29]/30 bg-[#FDFCF9]" />
+                                        <div className="w-3 h-3 rounded-full border border-[#061E29]/30 bg-[#FDFCF9]" />
+                                        <div className="w-3 h-3 rounded-full border border-[#061E29]/30 bg-[#FDFCF9]" />
                                     </div>
                                 </div>
-                                <div className="bg-white/90 backdrop-blur rounded-xl p-5 shadow-sm border border-white/60">
-                                    <p className="text-xs uppercase tracking-wide text-[#061E29]/50">Next best slot</p>
-                                    <p className="text-lg font-semibold text-[#061E29] mt-1">Wed · 2:30pm – 3:00pm</p>
-                                    <p className="text-sm text-[#061E29]/60 mt-2">4 people available · Focus hours respected</p>
+                            </div>
+                        </div>
+
+                        <div className="pt-8">
+                            <div className="text-[11px] uppercase tracking-wide text-[#061E29]/40">Negotiation</div>
+                            <div className="mt-3 flex items-start justify-between gap-6">
+                                <div className="space-y-2">
+                                    <div className="text-base font-semibold text-[#061E29]">Negotiation</div>
+                                    <p className="text-sm text-[#061E29]/60">Orcas exchange constraints and trade-offs.</p>
+                                    <p className="text-sm text-[#061E29]/60">No chat. No manual coordination.</p>
                                 </div>
-                                <div className="bg-white/90 backdrop-blur rounded-xl p-5 shadow-sm border border-white/60">
-                                    <p className="text-xs uppercase tracking-wide text-[#061E29]/50">Pod velocity</p>
-                                    <div className="mt-3 grid grid-cols-3 gap-3 text-center">
-                                        <div className="rounded-lg bg-[#F3F4F4] py-3 text-[#061E29]">
-                                            <div className="text-lg font-semibold">12</div>
-                                            <div className="text-[11px] text-[#061E29]/60">Meetings</div>
-                                        </div>
-                                        <div className="rounded-lg bg-[#F3F4F4] py-3 text-[#061E29]">
-                                            <div className="text-lg font-semibold">87%</div>
-                                            <div className="text-[11px] text-[#061E29]/60">Focus kept</div>
-                                        </div>
-                                        <div className="rounded-lg bg-[#F3F4F4] py-3 text-[#061E29]">
-                                            <div className="text-lg font-semibold">5h</div>
-                                            <div className="text-[11px] text-[#061E29]/60">Saved</div>
-                                        </div>
-                                    </div>
+                                <div className="flex items-center gap-2">
+                                    <div className="w-3 h-3 rounded-full border border-[#061E29]/30 bg-[#FDFCF9]" />
+                                    <div className="h-px w-8 bg-[#1D546D]/40" />
+                                    <div className="w-3 h-3 rounded-full border border-[#061E29]/30 bg-[#FDFCF9]" />
+                                    <div className="h-px w-8 bg-[#1D546D]/40" />
+                                    <div className="w-3 h-3 rounded-full border border-[#061E29]/30 bg-[#FDFCF9]" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="pt-8">
+                            <div className="text-[11px] uppercase tracking-wide text-[#061E29]/40">Outcome</div>
+                            <div className="mt-3 flex items-start justify-between gap-6">
+                                <div className="space-y-2">
+                                    <div className="text-base font-semibold text-[#061E29]">Outcome</div>
+                                    <p className="text-sm text-[#061E29]/60">A single committed result is produced.</p>
+                                    <p className="text-sm text-[#061E29]/60">You see the outcome, not the process.</p>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    <div className="w-3 h-3 rounded-full border border-[#061E29]/30 bg-[#FDFCF9]" />
+                                    <div className="h-px w-8 bg-[#1D546D]/40" />
+                                    <div className="h-8 w-16 rounded-lg border border-[#061E29]/20 bg-white" />
                                 </div>
                             </div>
                         </div>

@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getAuth, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from "firebase/auth";
 
 const firebaseConfig = {
     apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -47,6 +47,15 @@ export const signInWithGoogleCalendar = async () => {
         };
     } catch (error) {
         console.error("Error signing in with Google Calendar", error);
+        throw error;
+    }
+};
+
+export const signOutUser = async () => {
+    try {
+        await signOut(auth);
+    } catch (error) {
+        console.error("Error signing out", error);
         throw error;
     }
 };

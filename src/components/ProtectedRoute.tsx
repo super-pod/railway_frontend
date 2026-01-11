@@ -19,11 +19,7 @@ const ProtectedRoute = () => {
     }
 
     const path = location.pathname;
-    const isPodLink = path.startsWith('/pod/') || path.startsWith('/pod-invite/');
-
-    // Critical Step: Check if calendar is synced
-    // Allow pod invite/details to handle calendar gating per pod type
-    if (profile && !profile.is_calendar_synced && path !== '/sync-calendar' && !isPodLink) {
+    if (profile && !profile.is_calendar_synced && path !== '/sync-calendar') {
         return <Navigate to="/sync-calendar" state={{ from: location }} replace />;
     }
 

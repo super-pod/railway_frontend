@@ -24,15 +24,15 @@ const Login = () => {
         }
         if (profile) {
             const from = (location.state as any)?.from?.pathname;
+            if (!profile.is_calendar_synced) {
+                navigate('/sync-calendar', { state: { from: (location.state as any)?.from || location } });
+                return;
+            }
             if (!profile.has_orca) {
                 navigate('/setup-orca', { state: { from: (location.state as any)?.from || location } });
                 return;
             }
-            if (profile.is_calendar_synced) {
-                navigate(from || '/dashboard');
-            } else {
-                navigate('/sync-calendar', { state: { from: (location.state as any)?.from || location } });
-            }
+            navigate(from || '/dashboard');
         }
     }, [user, profile, loading, profileRetry, refreshProfile, navigate, location]);
 

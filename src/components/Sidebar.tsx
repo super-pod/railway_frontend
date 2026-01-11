@@ -1,5 +1,5 @@
 import { useLocation, Link, useNavigate } from 'react-router-dom';
-import { Calendar, Users, Settings, LayoutDashboard, Waves, LogOut } from 'lucide-react';
+import { Calendar, Users, Settings, LayoutDashboard, LogOut } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { signOutUser } from '../lib/firebaseClient';
 
@@ -32,9 +32,11 @@ const Sidebar = () => {
             <aside className="fixed left-0 top-0 h-full w-60 bg-[#061E29] p-5 hidden lg:flex flex-col">
                 {/* Logo */}
                 <div className="flex items-center gap-2.5 mb-10 px-1">
-                    <div className="w-8 h-8 bg-[#5F9598] rounded-lg flex items-center justify-center">
-                        <Waves className="w-4 h-4 text-[#061E29]" strokeWidth={2.5} />
-                    </div>
+                    <img
+                        src="/Orca_Logo.png"
+                        alt="Orca logo"
+                        className="w-8 h-8 rounded-lg object-contain"
+                    />
                     <span className="text-lg font-semibold text-white tracking-tight">
                         Orca
                     </span>

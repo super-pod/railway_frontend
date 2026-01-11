@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import apiClient from '../lib/apiClient';
-import { Waves } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 const SyncCalendar = () => {
@@ -61,9 +60,11 @@ const SyncCalendar = () => {
             <div className="max-w-md w-full">
                 <div className="card p-10 text-center">
                     {/* Logo */}
-                    <div className="w-12 h-12 bg-[#061E29] rounded-lg flex items-center justify-center mx-auto mb-6">
-                        <Waves className="w-6 h-6 text-[#5F9598]" strokeWidth={2} />
-                    </div>
+                    <img
+                        src="/Orca_Logo.png"
+                        alt="Orca logo"
+                        className="w-12 h-12 rounded-lg object-contain mx-auto mb-6"
+                    />
 
                     <h1 className="text-2xl font-semibold text-[#061E29] mb-3">Sync Your Calendar</h1>
                     <p className="text-sm text-[#061E29]/60 mb-8 leading-relaxed">

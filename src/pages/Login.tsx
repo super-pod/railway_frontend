@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { signInWithGoogle } from '../lib/firebaseClient';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Waves } from 'lucide-react';
 
 const Login = () => {
     const navigate = useNavigate();
@@ -52,9 +51,11 @@ const Login = () => {
                 <div className="max-w-md mx-auto w-full">
                     {/* Logo */}
                     <div className="flex items-center gap-2.5 mb-16">
-                        <div className="w-10 h-10 bg-[#061E29] rounded-lg flex items-center justify-center">
-                            <Waves className="text-[#F7F6F2] w-5 h-5" strokeWidth={2.5} />
-                        </div>
+                        <img
+                            src="/Orca_Logo.png"
+                            alt="Orca logo"
+                            className="w-10 h-10 rounded-lg object-contain"
+                        />
                         <span className="text-xl font-semibold tracking-tight text-[#061E29]">Orca</span>
                     </div>
 

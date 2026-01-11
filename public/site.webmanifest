@@ -1,0 +1,20 @@
+{
+  "name": "Orca",
+  "short_name": "Orca",
+  "description": "Autonomous agents coordinate group decisions and commit to outcomes.",
+  "icons": [
+    {
+      "src": "/favicon-128x128.png",
+      "sizes": "128x128",
+      "type": "image/png"
+    },
+    {
+      "src": "/favicon-256x256.png",
+      "sizes": "256x256",
+      "type": "image/png"
+    }
+  ],
+  "theme_color": "#061E29",
+  "background_color": "#F7F6F2",
+  "display": "standalone"
+}

@@ -23,7 +23,7 @@ const ProtectedRoute = () => {
         return <Navigate to="/sync-calendar" state={{ from: location }} replace />;
     }
 
-    if (profile && !profile.has_orca && path !== '/setup-orca') {
+    if (profile && !profile.has_orca && path !== '/setup-orca' && path !== '/sync-calendar') {
         return <Navigate to="/setup-orca" state={{ from: location }} replace />;
     }
 

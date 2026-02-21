@@ -1,173 +1,250 @@
 import React, { useEffect, useState } from 'react';
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { signInWithGoogle } from '../lib/firebaseClient';
-import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import apiClient from '../lib/apiClient';
+
+const PROBLEM_LINES = ['"When works for you?"', '"How about Tuesday?"', '"Actually, can we do Thursday?"'];
+const SOLUTION_LINES = ['Share one link', 'They pick a time', "It's on both calendars"];
+const CORE_BENEFITS = [
+    {
+        icon: '\uD83D\uDD12',
+        text: 'Your calendar is never exposed to anyone.',
+    },
+    {
+        icon: '\u2728',
+        text: 'Orca AI helps keep you organized automatically.',
+    },
+];
+const TRUST_BADGES = [
+    { icon: '\u26A1', text: 'Free forever' },
+    { icon: '\u23F1\uFE0F', text: 'Setup in 30 seconds' },
+    { icon: '\uD83D\uDD12', text: 'We never send emails on your behalf' },
+];
+const SOCIAL_PROOF_COUNT = 1247;
+const PROBLEM_ICON = '\u274C';
+const CHECK_ICON = '\u2713';
 
 const Login = () => {
     const navigate = useNavigate();
     const location = useLocation();
-    const { user, profile, loading, refreshProfile } = useAuth();
-    const [profileRetry, setProfileRetry] = useState(false);
+    const [searchParams] = useSearchParams();
+    const { user, loading } = useAuth();
+    const requestedNext = searchParams.get('next');
+    const fromState = (location.state as { from?: { pathname?: string; search?: string } } | null)?.from;
+    const fromStatePath =
+        fromState?.pathname && fromState.pathname.startsWith('/') ? `${fromState.pathname}${fromState.search || ''}` : null;
+    const nextPath = requestedNext && requestedNext.startsWith('/') ? requestedNext : fromStatePath || '/app';
+    const [isPanelVisible, setIsPanelVisible] = useState(false);
+    const [displayedUsers, setDisplayedUsers] = useState(0);
+    const [isSigningIn, setIsSigningIn] = useState(false);
+    const [loginError, setLoginError] = useState('');
 
     useEffect(() => {
-        if (!user || loading) {
+        if (!isSigningIn && !loading && user) {
+            navigate(nextPath, { replace: true });
+        }
+    }, [isSigningIn, loading, user, navigate, nextPath]);
+
+    useEffect(() => {
+        if (typeof window === 'undefined') {
             return;
         }
-        if (!profile && !profileRetry) {
-            setProfileRetry(true);
-            refreshProfile().catch((error) => console.error('Failed to refresh profile', error));
+
+        const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        if (prefersReducedMotion) {
+            setIsPanelVisible(true);
+            setDisplayedUsers(SOCIAL_PROOF_COUNT);
             return;
         }
-        if (!profile && profileRetry) {
-            navigate('/dashboard');
-            return;
-        }
-        if (profile) {
-            const from = (location.state as any)?.from?.pathname;
-            if (!profile.is_calendar_synced) {
-                navigate('/sync-calendar', { state: { from: (location.state as any)?.from || location } });
-                return;
+
+        const revealFrame = window.requestAnimationFrame(() => setIsPanelVisible(true));
+        const durationMs = 900;
+        let countFrame = 0;
+        let startTime: number | null = null;
+
+        const step = (timestamp: number) => {
+            if (startTime === null) {
+                startTime = timestamp;
             }
-            if (!profile.has_orca) {
-                navigate('/setup-orca', { state: { from: (location.state as any)?.from || location } });
-                return;
+
+            const progress = Math.min((timestamp - startTime) / durationMs, 1);
+            setDisplayedUsers(Math.round(SOCIAL_PROOF_COUNT * progress));
+
+            if (progress < 1) {
+                countFrame = window.requestAnimationFrame(step);
             }
-            navigate(from || '/dashboard');
-        }
-    }, [user, profile, loading, profileRetry, refreshProfile, navigate, location]);
+        };
+
+        countFrame = window.requestAnimationFrame(step);
+
+        return () => {
+            window.cancelAnimationFrame(revealFrame);
+            window.cancelAnimationFrame(countFrame);
+        };
+    }, []);
 
     const handleLogin = async () => {
+        setLoginError('');
+        setIsSigningIn(true);
         try {
             await signInWithGoogle();
-        } catch (error) {
+            const bootstrap = await apiClient.post('/mvp/auth/bootstrap');
+            const calendarConnected = Boolean(bootstrap.data?.profile?.calendar_connected);
+
+            if (calendarConnected) {
+                navigate(nextPath, { replace: true });
+                return;
+            }
+
+            const oauthStart = await apiClient.post('/mvp/oauth/start', {
+                provider: 'calendar',
+                from_path: nextPath,
+            });
+
+            const authUrl = oauthStart.data?.auth_url;
+            if (!authUrl) {
+                throw new Error('Could not start Google Calendar authorization.');
+            }
+            window.location.href = authUrl;
+        } catch (error: any) {
             console.error('Login failed', error);
+            setLoginError(error?.response?.data?.detail || 'Could not finish sign in. Please try again.');
+            setIsSigningIn(false);
         }
     };
 
     return (
-        <div className="min-h-screen flex bg-[#F7F6F2]">
-            {/* Left Side: Entry */}
-            <div className="w-full lg:w-1/2 flex flex-col justify-between p-8 lg:p-16 border-b lg:border-b-0 lg:border-r border-[#061E29]/10">
-                <div className="max-w-md mx-auto w-full">
-                    {/* Logo */}
-                    <div className="flex items-center gap-2.5 mb-16">
+        <div className="min-h-screen bg-[#f5f5f4] text-[#0f2632]">
+            <div className="mx-auto grid min-h-screen max-w-[1680px] lg:grid-cols-2">
+                <section className="flex flex-col px-6 py-8 sm:px-14 sm:py-12 lg:px-20 lg:py-12">
+                    <div className="inline-flex items-center gap-3">
                         <img
                             src="/Orca_Logo.png"
                             alt="Orca logo"
-                            className="w-10 h-10 rounded-lg object-contain"
+                            className="h-10 w-10 rounded-xl border border-[#d8dde0] bg-white p-1.5 sm:h-11 sm:w-11"
                         />
-                        <span className="text-xl font-semibold tracking-tight text-[#061E29]">Orca</span>
+                        <span className="text-[1.3rem] font-semibold tracking-[-0.02em] sm:text-[1.5rem]">Orca</span>
                     </div>
 
-                    {/* Heading */}
-                    <h1 className="text-3xl lg:text-4xl font-semibold mb-4 leading-tight text-[#061E29]">
-                        Orca runs decisions for you.
-                    </h1>
-                    <p className="text-[#061E29]/70 mb-10 text-base">
-                        Create an orca. Others create theirs. They negotiate and commit without you in the loop.
-                    </p>
+                    <div className="mt-10 max-w-[620px] space-y-4 lg:mt-14">
+                        <h1 className="text-4xl font-semibold leading-[1.08] tracking-[-0.03em] text-[#0d2634] sm:text-[2.75rem] lg:text-[3.35rem]">
+                            Orca runs decisions for you.
+                        </h1>
+                        <p className="max-w-[560px] text-base leading-relaxed text-[#5c707a] sm:text-[1.05rem] lg:text-[1.35rem] lg:leading-[1.35]">
+                            Create an orca. Others create theirs. They negotiate and commit without you in the loop.
+                        </p>
 
-                    {/* Login Button */}
-                    <button
-                        onClick={handleLogin}
-                        className="flex items-center justify-center w-full bg-[#1D546D] py-3.5 px-6 rounded-lg hover:bg-[#17475C] transition-all gap-3 font-medium text-white"
+                        <div className="pt-3">
+                            <button
+                                onClick={handleLogin}
+                                disabled={isSigningIn}
+                                className="inline-flex w-full max-w-[560px] items-center justify-center gap-3 rounded-xl bg-[#115a78] px-5 py-3 text-[0.95rem] font-semibold text-white transition hover:bg-[#0f506a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#115a78]/40"
+                            >
+                                <img
+                                    src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
+                                    alt="Google"
+                                    className="h-5 w-5 rounded bg-white p-0.5"
+                                />
+                                {isSigningIn ? 'Connecting Google...' : 'Continue with Google'}
+                            </button>
+                            {loginError && <p className="mt-3 text-[13px] text-[#a83f3f]">{loginError}</p>}
+                            <p className="mt-3 text-[13px] text-[#8e9ba3]">Calendar access is required to create or join pods.</p>
+                        </div>
+                    </div>
+
+                    <div className="mt-auto flex items-center gap-7 pt-8 text-sm text-[#97a4aa]">
+                        <Link to="/privacy" className="hover:text-[#5a6b73]">
+                            Privacy
+                        </Link>
+                        <Link to="/terms" className="hover:text-[#5a6b73]">
+                            Terms
+                        </Link>
+                        <a href="mailto:contact@getorca.in" className="hover:text-[#5a6b73]">
+                            Contact
+                        </a>
+                    </div>
+                </section>
+
+                <section className="border-t border-[#e3e5e6] px-6 py-8 sm:px-14 sm:py-12 lg:border-l lg:border-t-0 lg:px-20 lg:py-12">
+                    <div
+                        className={`mx-auto flex h-full max-w-[620px] flex-col pt-8 sm:pt-12 lg:pt-24 transition-all duration-500 motion-reduce:transition-none ${
+                            isPanelVisible ? 'translate-y-0 opacity-100' : 'translate-y-2 opacity-0'
+                        }`}
                     >
-                        <img
-                            src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
-                            className="w-5 h-5 bg-white p-0.5 rounded"
-                            alt="Google"
-                        />
-                        Continue with Google
-                    </button>
-                    <p className="text-xs text-[#061E29]/50 mt-3">
-                        Calendar access is required to create or join pods.
-                    </p>
-                </div>
+                        <div className="space-y-9 sm:space-y-11">
+                            <h2 className="max-w-[560px] text-[2rem] font-bold leading-[1.03] tracking-[-0.03em] text-[#0f2632] sm:text-[2.5rem] lg:text-[3rem]">
+                                Stop the scheduling ping-pong
+                            </h2>
 
-                {/* Footer Links */}
-                <div className="flex gap-6 text-xs text-[#061E29]/40 mt-12">
-                    <a href="/privacy" className="hover:text-[#061E29] transition-colors">Privacy</a>
-                    <a href="/terms" className="hover:text-[#061E29] transition-colors">Terms</a>
-                    <a href="mailto:hello@orca.app" className="hover:text-[#061E29] transition-colors">Contact</a>
-                </div>
-            </div>
+                            <section className="rounded-2xl border border-[#d5e3e7] bg-white/75 p-4 sm:p-5" aria-label="Key Orca benefits">
+                                <ul className="space-y-3">
+                                    {CORE_BENEFITS.map((benefit) => (
+                                        <li key={benefit.text} className="flex items-start gap-3 text-[0.98rem] font-medium leading-relaxed text-[#32515f] sm:text-[1.05rem]">
+                                            <span aria-hidden="true" className="mt-[1px] text-[1rem]">
+                                                {benefit.icon}
+                                            </span>
+                                            <span>{benefit.text}</span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </section>
 
-            {/* Right Side: System Diagram */}
-            <div className="hidden lg:flex lg:w-1/2 bg-[#F7F6F2] items-center justify-center">
-                <div className="w-full max-w-xl px-14 py-16">
-                    <div className="text-[11px] uppercase tracking-[0.2em] text-[#061E29]/40 mb-6">
-                        System Model
-                    </div>
-                    <div className="space-y-8 divide-y divide-[#061E29]/10">
-                        <div className="pt-0">
-                            <div className="text-[11px] uppercase tracking-wide text-[#061E29]/40">Agents</div>
-                            <div className="mt-3 flex items-start justify-between gap-6">
-                                <div className="space-y-2">
-                                    <div className="text-base font-semibold text-[#061E29]">Orcas</div>
-                                    <p className="text-sm text-[#061E29]/60">You create an orca with preferences, constraints, and authority.</p>
-                                    <p className="text-sm text-[#061E29]/60">Others bring their own orcas.</p>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <div className="w-3 h-3 rounded-full border border-[#061E29]/30 bg-[#FDFCF9]" />
-                                    <div className="w-3 h-3 rounded-full border border-[#061E29]/30 bg-[#FDFCF9]" />
-                                    <div className="w-3 h-3 rounded-full border border-[#061E29]/30 bg-[#FDFCF9]" />
-                                </div>
-                            </div>
+                            <section className="space-y-4" aria-labelledby="scheduling-problem">
+                                <h3 id="scheduling-problem" className="text-xs uppercase tracking-[0.2em] text-[#ac8f94]">
+                                    The Back-and-Forth
+                                </h3>
+                                <ul className="space-y-3" aria-label="Scheduling pain points">
+                                    {PROBLEM_LINES.map((line) => (
+                                        <li key={line} className="flex items-center gap-3 text-[1rem] font-normal leading-snug text-[#8f7479] sm:text-[1.125rem]">
+                                            <span aria-hidden="true" className="text-[1.05rem] leading-none text-[#b36f77]">
+                                                {PROBLEM_ICON}
+                                            </span>
+                                            <span>{line}</span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </section>
+
+                            <section className="space-y-4 border-t border-[#d7e6d9] pt-8 sm:pt-9" aria-labelledby="scheduling-solution">
+                                <h3 id="scheduling-solution" className="text-xs uppercase tracking-[0.2em] text-[#5f8b6b]">
+                                    The Orca Flow
+                                </h3>
+                                <ul className="space-y-4" aria-label="Simple scheduling steps">
+                                    {SOLUTION_LINES.map((line, index) => (
+                                        <li
+                                            key={line}
+                                            className={`flex items-center gap-3 text-[1.05rem] font-semibold leading-snug text-[#196c3d] transition-all duration-300 motion-reduce:transition-none sm:text-[1.25rem] ${
+                                                isPanelVisible ? 'translate-x-0 opacity-100' : '-translate-x-1 opacity-0'
+                                            }`}
+                                            style={{ transitionDelay: `${180 + index * 120}ms` }}
+                                        >
+                                            <span aria-hidden="true" className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-[#e4f3e7] text-[1rem] text-[#196c3d]">
+                                                {CHECK_ICON}
+                                            </span>
+                                            <span>{line}</span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </section>
+
+                            <p className="max-w-[560px] text-base font-medium leading-relaxed text-[#4c5d65] sm:text-[1rem]">
+                                Join <span className="font-semibold tabular-nums text-[#0f2632]">{displayedUsers.toLocaleString()}</span> people who've eliminated scheduling back-and-forth
+                            </p>
                         </div>
 
-                        <div className="pt-8">
-                            <div className="text-[11px] uppercase tracking-wide text-[#061E29]/40">Coordination</div>
-                            <div className="mt-3 flex items-start justify-between gap-6">
-                                <div className="space-y-2">
-                                    <div className="text-base font-semibold text-[#061E29]">Pods</div>
-                                    <p className="text-sm text-[#061E29]/60">Orcas form pods to solve a shared goal.</p>
-                                    <p className="text-sm text-[#061E29]/60">Context is shared only inside the pod.</p>
-                                </div>
-                                <div className="rounded-xl border border-[#061E29]/15 bg-[#FDFCF9] px-3 py-3">
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-3 h-3 rounded-full border border-[#061E29]/30 bg-[#FDFCF9]" />
-                                        <div className="w-3 h-3 rounded-full border border-[#061E29]/30 bg-[#FDFCF9]" />
-                                        <div className="w-3 h-3 rounded-full border border-[#061E29]/30 bg-[#FDFCF9]" />
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="pt-8">
-                            <div className="text-[11px] uppercase tracking-wide text-[#061E29]/40">Negotiation</div>
-                            <div className="mt-3 flex items-start justify-between gap-6">
-                                <div className="space-y-2">
-                                    <div className="text-base font-semibold text-[#061E29]">Negotiation</div>
-                                    <p className="text-sm text-[#061E29]/60">Orcas exchange constraints and trade-offs.</p>
-                                    <p className="text-sm text-[#061E29]/60">No chat. No manual coordination.</p>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <div className="w-3 h-3 rounded-full border border-[#061E29]/30 bg-[#FDFCF9]" />
-                                    <div className="h-px w-8 bg-[#1D546D]/40" />
-                                    <div className="w-3 h-3 rounded-full border border-[#061E29]/30 bg-[#FDFCF9]" />
-                                    <div className="h-px w-8 bg-[#1D546D]/40" />
-                                    <div className="w-3 h-3 rounded-full border border-[#061E29]/30 bg-[#FDFCF9]" />
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="pt-8">
-                            <div className="text-[11px] uppercase tracking-wide text-[#061E29]/40">Outcome</div>
-                            <div className="mt-3 flex items-start justify-between gap-6">
-                                <div className="space-y-2">
-                                    <div className="text-base font-semibold text-[#061E29]">Outcome</div>
-                                    <p className="text-sm text-[#061E29]/60">A single committed result is produced.</p>
-                                    <p className="text-sm text-[#061E29]/60">You see the outcome, not the process.</p>
-                                </div>
-                                <div className="flex items-center gap-3">
-                                    <div className="w-3 h-3 rounded-full border border-[#061E29]/30 bg-[#FDFCF9]" />
-                                    <div className="h-px w-8 bg-[#1D546D]/40" />
-                                    <div className="h-8 w-16 rounded-lg border border-[#061E29]/20 bg-white" />
-                                </div>
-                            </div>
+                        <div className="mt-8 border-t border-[#e3e5e6] pt-6 sm:mt-10 sm:pt-7 lg:mt-12">
+                            <ul className="flex flex-col gap-3 text-sm text-[#7f8c92] sm:flex-row sm:items-center sm:justify-between sm:gap-4" aria-label="Trust badges">
+                                {TRUST_BADGES.map((badge) => (
+                                    <li key={badge.text} className="inline-flex items-center gap-2 rounded-lg bg-white/70 px-3 py-2 ring-1 ring-[#d7dee1]">
+                                        <span aria-hidden="true">{badge.icon}</span>
+                                        <span>{badge.text}</span>
+                                    </li>
+                                ))}
+                            </ul>
                         </div>
                     </div>
-                </div>
+                </section>
             </div>
         </div>
     );

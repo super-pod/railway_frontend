@@ -192,3 +192,13 @@ select:focus {
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(6, 30, 41, 0.25);
 }
+
+/* Gmail sync waitlist page */
+.gmail-benefit-card {
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.gmail-benefit-card:hover {
+  border-color: rgba(10, 79, 86, 0.22);
+  background-color: #fbfdfd;
+}

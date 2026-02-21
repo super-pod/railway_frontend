@@ -1,8 +1,17 @@
 import axios from 'axios';
 import { auth } from './firebaseClient';
 
+const isLocalFrontendHost = (() => {
+    if (typeof window === 'undefined') {
+        return false;
+    }
+    return window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+})();
+
+const localApiBase = import.meta.env.VITE_LOCAL_API_URL || 'http://127.0.0.1:8000';
+
 const apiClient = axios.create({
-    baseURL: import.meta.env.VITE_API_URL || '/api',
+    baseURL: isLocalFrontendHost ? localApiBase : (import.meta.env.VITE_API_URL || '/api'),
 });
 
 apiClient.interceptors.request.use(async (config) => {

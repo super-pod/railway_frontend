@@ -8,8 +8,8 @@ const ProtectedRoute = () => {
 
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-slate-900">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+            <div className="min-h-screen grid place-items-center bg-[#f4f8f7]">
+                <div className="h-10 w-10 animate-spin rounded-full border-4 border-[#0a4f56]/20 border-t-[#0a4f56]" />
             </div>
         );
     }
@@ -18,13 +18,15 @@ const ProtectedRoute = () => {
         return <Navigate to="/login" state={{ from: location }} replace />;
     }
 
-    const path = location.pathname;
-    if (profile && !profile.is_calendar_synced && path !== '/sync-calendar') {
-        return <Navigate to="/sync-calendar" state={{ from: location }} replace />;
+    const hasUsername = Boolean((profile?.username || '').trim());
+    const onOnboardingRoute = location.pathname.startsWith('/app/onboarding');
+
+    if (!hasUsername && location.pathname.startsWith('/app') && !onOnboardingRoute) {
+        return <Navigate to="/app/onboarding" state={{ from: location }} replace />;
     }
 
-    if (profile && !profile.has_orca && path !== '/setup-orca' && path !== '/sync-calendar') {
-        return <Navigate to="/setup-orca" state={{ from: location }} replace />;
+    if (hasUsername && onOnboardingRoute) {
+        return <Navigate to="/app" replace />;
     }
 
     return <Outlet />;

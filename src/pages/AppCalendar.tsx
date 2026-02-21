@@ -111,7 +111,7 @@ const AppCalendar = () => {
     }, [groupedEvents]);
 
     return (
-        <div className="px-5 py-8 lg:px-8">
+        <div className="px-4 py-8 sm:px-5 lg:px-8">
             <div className="mx-auto max-w-5xl space-y-6">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
@@ -130,21 +130,22 @@ const AppCalendar = () => {
                     </button>
                 </div>
 
-                {!calendarConnected && (
-                    <div className="rounded-2xl border border-[#0a4f56]/12 bg-white p-6">
-                        <p className="text-base font-semibold text-[#09343a]">Connect your Google Calendar</p>
-                        <p className="mt-2 text-sm text-[#33585d]">
-                            Calendar sync is required before your events can be shown here.
-                        </p>
+                <section className="rounded-2xl border border-[#0a4f56]/12 bg-white p-6">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div className="inline-flex items-center gap-2">
+                            <span className={`h-2.5 w-2.5 rounded-full ${calendarConnected ? 'bg-emerald-500' : 'bg-red-500'}`} />
+                            <p className="text-sm font-semibold text-[#09343a]">{calendarConnected ? 'Calendar synced' : 'Calendar not synced'}</p>
+                        </div>
                         <button
                             onClick={connectCalendar}
                             disabled={syncingCalendar}
-                            className="mt-4 rounded-lg bg-[#0a4f56] px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+                            className="rounded-lg border border-[#0a4f56]/20 px-3 py-2 text-sm text-[#0a4f56] disabled:opacity-60"
                         >
-                            {syncingCalendar ? 'Connecting...' : 'Connect Google Calendar'}
+                            {syncingCalendar ? 'Connecting...' : calendarConnected ? 'Reconnect calendar' : 'Connect Google Calendar'}
                         </button>
                     </div>
-                )}
+                    {!calendarConnected && <p className="mt-2 text-sm text-[#33585d]">Connect Google Calendar to show upcoming events.</p>}
+                </section>
 
                 {error && (
                     <div className="rounded-2xl border border-red-200 bg-red-50 p-4">

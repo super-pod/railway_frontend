@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import apiClient from '../lib/apiClient';
+import { useAuth } from '../context/AuthContext';
 
 interface Slot {
     start: string;
@@ -32,10 +33,24 @@ const localTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
 const formatLocal = (iso: string) =>
     new Intl.DateTimeFormat(undefined, { dateStyle: 'full', timeStyle: 'short', timeZone: localTimezone }).format(new Date(iso));
 
+const OrcaLinkHeader = () => (
+    <header className="mx-auto mb-6 flex w-full max-w-5xl items-center">
+        <div className="inline-flex items-center gap-3 rounded-2xl border border-[#0a4f56]/12 bg-white px-4 py-3 shadow-sm">
+            <img
+                src="/Orca_Logo.png"
+                alt="Orca logo"
+                className="h-10 w-10 rounded-xl border border-[#d8dde0] bg-white p-1 object-contain"
+            />
+            <span className="text-[1.25rem] font-semibold tracking-[-0.02em] text-[#09343a]">Orca</span>
+        </div>
+    </header>
+);
+
 const OrcaLinkPage = () => {
     const { username, shareToken } = useParams();
     const location = useLocation();
     const navigate = useNavigate();
+    const { user, loading: authLoading } = useAuth();
 
     const [data, setData] = useState<LinkPayload | null>(null);
     const [loading, setLoading] = useState(true);
@@ -73,11 +88,17 @@ const OrcaLinkPage = () => {
             }
         };
 
+        if (authLoading) {
+            return () => {
+                active = false;
+            };
+        }
+
         void load();
         return () => {
             active = false;
         };
-    }, [username, shareToken]);
+    }, [username, shareToken, authLoading, user?.uid]);
 
     useEffect(() => {
         if (!data?.viewer?.signed_in || !data.preferred_slot || timerStopped) {
@@ -145,13 +166,31 @@ const OrcaLinkPage = () => {
     };
 
     if (loading) {
-        return <div className="min-h-screen grid place-items-center bg-[#f4f8f7] text-[#33585d]">Loading link...</div>;
+        return (
+            <div className="min-h-screen bg-[#f4f8f7] px-5 py-8">
+                <OrcaLinkHeader />
+                <div className="mx-auto grid min-h-[calc(100vh-11.5rem)] max-w-5xl place-items-center">
+                    <div className="flex w-full max-w-sm flex-col items-center rounded-2xl border border-[#0a4f56]/12 bg-white p-6 text-center">
+                        <iframe
+                            src="https://embed.lottiefiles.com/animation/78060"
+                            title="Loading calendar animation"
+                            className="h-44 w-44 rounded-xl border-0"
+                            loading="eager"
+                        />
+                        <p className="mt-3 text-sm text-[#33585d]">Preparing your calendar link...</p>
+                    </div>
+                </div>
+            </div>
+        );
     }
 
     if (error) {
         return (
-            <div className="min-h-screen grid place-items-center bg-[#f4f8f7] px-4">
-                <div className="max-w-md rounded-2xl border border-[#d9a4a4] bg-[#fff5f5] p-6 text-center text-[#8b2b2b]">{error}</div>
+            <div className="min-h-screen bg-[#f4f8f7] px-5 py-8">
+                <OrcaLinkHeader />
+                <div className="mx-auto grid min-h-[calc(100vh-11.5rem)] max-w-5xl place-items-center">
+                    <div className="max-w-md rounded-2xl border border-[#d9a4a4] bg-[#fff5f5] p-6 text-center text-[#8b2b2b]">{error}</div>
+                </div>
             </div>
         );
     }
@@ -167,10 +206,25 @@ const OrcaLinkPage = () => {
 
     return (
         <div className="min-h-screen bg-[#f4f8f7] px-5 py-8">
+            <OrcaLinkHeader />
+            {!isSignedIn && (
+                <div className="mx-auto mb-4 max-w-5xl rounded-2xl border border-[#0a4f56]/15 bg-[#eef7f6] px-4 py-3 sm:px-5">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <p className="text-sm font-semibold text-[#09343a]">Already have an Orca account?</p>
+                        <button
+                            type="button"
+                            onClick={() => navigate(`/login?next=${encodeURIComponent(nextPath)}`)}
+                            className="w-full rounded-lg bg-[#0a4f56] px-4 py-2 text-sm font-semibold text-white hover:bg-[#083b42] sm:w-auto"
+                        >
+                            Login
+                        </button>
+                    </div>
+                </div>
+            )}
             <div className="mx-auto max-w-5xl rounded-3xl border border-[#0a4f56]/12 bg-white p-6">
                 <h1 className="text-3xl font-semibold text-[#09343a]">Schedule time with {data.owner.name}</h1>
 
-                <div className="mt-6 grid gap-6 lg:grid-cols-[1.35fr_0.9fr]">
+                <div className={`mt-6 grid gap-6 ${isSignedIn ? 'lg:grid-cols-[1.35fr_0.9fr]' : ''}`}>
                     <section className="space-y-6">
                         {!isSignedIn && (
                             <>
@@ -222,7 +276,7 @@ const OrcaLinkPage = () => {
                                     onClick={() => selectedSlot && confirm(selectedSlot)}
                                     className="w-full rounded-lg bg-[#0a4f56] px-4 py-2 text-sm font-semibold text-white hover:bg-[#083b42] disabled:cursor-not-allowed disabled:opacity-50"
                                 >
-                                    {booking ? 'Confirming...' : 'Confirm meeting'}
+                                    {booking ? 'Scheduling...' : 'Schedule'}
                                 </button>
 
                                 <p className="text-xs text-[#33585d]">Meeting scheduled? Check your email for Google Calendar invite.</p>
@@ -284,22 +338,8 @@ const OrcaLinkPage = () => {
                         <p className="text-xs text-[#33585d]">Times shown in your local timezone: {localTimezone}</p>
                     </section>
 
-                    <aside className="h-fit space-y-4 rounded-xl border border-[#0a4f56]/15 bg-[#eef7f6] p-4">
-                        {!isSignedIn ? (
-                            <>
-                                <p className="text-sm font-semibold text-[#09343a]">Already have an Orca account?</p>
-                                <p className="text-sm text-[#33585d]">
-                                    If this opened in another browser or session, log in or sign up. We will bring you back here after login.
-                                </p>
-                                <button
-                                    type="button"
-                                    onClick={() => navigate(`/login?next=${encodeURIComponent(nextPath)}`)}
-                                    className="rounded-lg bg-[#0a4f56] px-4 py-2 text-sm font-semibold text-white hover:bg-[#083b42]"
-                                >
-                                    Log in / Sign up
-                                </button>
-                            </>
-                        ) : (
+                    {isSignedIn && (
+                        <aside className="h-fit space-y-4 rounded-xl border border-[#0a4f56]/15 bg-[#eef7f6] p-4">
                             <>
                                 <p className="text-sm font-semibold text-[#09343a]">Signed in</p>
                                 <p className="text-sm text-[#33585d]">The sidebar stays available while you review options and timing details.</p>
@@ -314,8 +354,8 @@ const OrcaLinkPage = () => {
                                     Open dashboard
                                 </button>
                             </>
-                        )}
-                    </aside>
+                        </aside>
+                    )}
                 </div>
             </div>
         </div>

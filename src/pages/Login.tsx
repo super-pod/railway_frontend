@@ -153,7 +153,7 @@ const Login = () => {
                         </div>
                     </div>
 
-                    <div className="mt-auto flex items-center gap-7 pt-8 text-sm text-[#97a4aa]">
+                    <div className="mt-auto hidden items-center gap-7 pt-8 text-sm text-[#97a4aa] lg:flex">
                         <Link to="/privacy" className="hover:text-[#5a6b73]">
                             Privacy
                         </Link>
@@ -245,6 +245,20 @@ const Login = () => {
                         </div>
                     </div>
                 </section>
+
+                <div className="px-6 pb-8 pt-3 sm:px-14 lg:hidden">
+                    <div className="flex items-center gap-7 text-sm text-[#97a4aa]">
+                        <Link to="/privacy" className="hover:text-[#5a6b73]">
+                            Privacy
+                        </Link>
+                        <Link to="/terms" className="hover:text-[#5a6b73]">
+                            Terms
+                        </Link>
+                        <a href="mailto:contact@getorca.in" className="hover:text-[#5a6b73]">
+                            Contact
+                        </a>
+                    </div>
+                </div>
             </div>
         </div>
     );

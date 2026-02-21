@@ -5,6 +5,7 @@ import AppSidebar from './components/AppSidebar';
 import Login from './pages/Login';
 import AppHome from './pages/AppHome';
 import AppCalendar from './pages/AppCalendar';
+import AppPodHistory from './pages/AppPodHistory';
 import GmailSyncPage from './pages/GmailSyncPage';
 import Onboarding from './pages/Onboarding';
 import OrcaLinkPage from './pages/OrcaLinkPage';
@@ -17,7 +18,7 @@ import { useAuth } from './context/AuthContext';
 const AppShell = () => (
     <div className="min-h-screen bg-[#f4f8f7]">
         <AppSidebar />
-        <main className="pb-24 lg:ml-60 lg:pb-0">
+        <main className="pb-6 pt-28 lg:ml-60 lg:pb-0 lg:pt-0">
             <Outlet />
         </main>
     </div>
@@ -54,6 +55,7 @@ function App() {
                     <Route element={<AppShell />}>
                         <Route path="/app" element={<AppHome />} />
                         <Route path="/app/calendar" element={<AppCalendar />} />
+                        <Route path="/app/pods" element={<AppPodHistory />} />
                         <Route path="/app/gmail-sync" element={<GmailSyncPage />} />
                         <Route path="/app/settings" element={<Navigate to="/app" replace />} />
                     </Route>

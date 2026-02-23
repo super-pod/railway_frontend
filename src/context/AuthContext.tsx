@@ -33,6 +33,39 @@ interface AuthContextValue {
     refresh: () => Promise<void>;
 }
 
+const BOOTSTRAP_CACHE_TTL_MS = 15000;
+
+let bootstrapCache: { uid: string; profile: Profile; at: number } | null = null;
+let bootstrapInFlight: { uid: string; promise: Promise<Profile> } | null = null;
+
+const loadBootstrapProfile = async (uid: string, force: boolean): Promise<Profile> => {
+    if (!force && bootstrapCache && bootstrapCache.uid === uid && Date.now() - bootstrapCache.at < BOOTSTRAP_CACHE_TTL_MS) {
+        return bootstrapCache.profile;
+    }
+
+    if (!force && bootstrapInFlight && bootstrapInFlight.uid === uid) {
+        return bootstrapInFlight.promise;
+    }
+
+    const promise = apiClient.post('/mvp/auth/bootstrap')
+        .then((bootstrap) => {
+            const nextProfile = bootstrap.data?.profile as Profile | undefined;
+            if (!nextProfile) {
+                throw new Error('Bootstrap response missing profile');
+            }
+            bootstrapCache = { uid, profile: nextProfile, at: Date.now() };
+            return nextProfile;
+        })
+        .finally(() => {
+            if (bootstrapInFlight?.uid === uid) {
+                bootstrapInFlight = null;
+            }
+        });
+
+    bootstrapInFlight = { uid, promise };
+    return promise;
+};
+
 const AuthContext = createContext<AuthContextValue>({
     user: null,
     profile: null,
@@ -48,21 +81,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [loading, setLoading] = useState(true);
 
     const refresh = async () => {
-        if (!auth.currentUser) {
+        const currentUser = auth.currentUser;
+        if (!currentUser) {
             setProfile(null);
             return;
         }
-        const bootstrap = await apiClient.post('/mvp/auth/bootstrap');
-        const me = await apiClient.get('/mvp/me');
-        const merged: Profile = {
-            ...(bootstrap.data.profile as Profile),
-            ...(me.data.profile as Profile),
-        };
-        setProfile(merged);
+        const nextProfile = await loadBootstrapProfile(currentUser.uid, true);
+        setProfile(nextProfile);
     };
 
     useEffect(() => {
+        let active = true;
         const unsubscribe = onAuthStateChanged(auth, async (nextUser) => {
+            if (!active) {
+                return;
+            }
             setUser(nextUser);
             if (!nextUser) {
                 setProfile(null);
@@ -70,17 +103,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 return;
             }
 
+            setLoading(true);
             try {
-                await refresh();
+                const nextProfile = await loadBootstrapProfile(nextUser.uid, false);
+                if (!active) {
+                    return;
+                }
+                setProfile(nextProfile);
             } catch (error) {
                 console.error('Failed to initialize session', error);
+                if (!active) {
+                    return;
+                }
                 setProfile(null);
             } finally {
-                setLoading(false);
+                if (active) {
+                    setLoading(false);
+                }
             }
         });
 
-        return () => unsubscribe();
+        return () => {
+            active = false;
+            unsubscribe();
+        };
     }, []);
 
     const value = useMemo(

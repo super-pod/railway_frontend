@@ -13,6 +13,7 @@ import PodPage from './pages/PodPage';
 import OAuthComplete from './pages/OAuthComplete';
 import Privacy from './pages/Privacy';
 import Terms from './pages/Terms';
+import Vision from './pages/Vision';
 import { useAuth } from './context/AuthContext';
 
 const AppShell = () => (
@@ -57,6 +58,7 @@ function App() {
                         <Route path="/app/calendar" element={<AppCalendar />} />
                         <Route path="/app/pods" element={<AppPodHistory />} />
                         <Route path="/app/gmail-sync" element={<GmailSyncPage />} />
+                        <Route path="/app/vision" element={<Vision />} />
                         <Route path="/app/settings" element={<Navigate to="/app" replace />} />
                     </Route>
                 </Route>

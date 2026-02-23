@@ -156,10 +156,10 @@ const PodPage = () => {
                                 </div>
 
                                 <Link
-                                    className="inline-flex w-full items-center justify-center rounded-lg bg-[#115a78] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#0f506a]"
+                                    className="inline-flex w-full items-center justify-center rounded-lg border border-[#c7ced1] bg-white px-4 py-2.5 text-sm font-semibold text-[#1f1f1f] hover:bg-[#f7f8f8]"
                                     to={`/login?next=${encodeURIComponent(nextPath)}`}
                                 >
-                                    Sign up with Google
+                                    Sign in with Google
                                 </Link>
                                 <p className="text-xs text-[#8f7c65]">Calendar access is required to create or join pods.</p>
 

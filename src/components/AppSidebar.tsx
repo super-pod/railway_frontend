@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { CalendarDays, History, LayoutDashboard, LogOut, Mail, Menu, X } from 'lucide-react';
+import { CalendarDays, History, LayoutDashboard, Lightbulb, LogOut, Mail, Menu, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { signOutUser } from '../lib/firebaseClient';
 
@@ -13,6 +13,7 @@ const AppSidebar = () => {
     const isCalendarRoute = location.pathname === '/app/calendar';
     const isPodsRoute = location.pathname === '/app/pods';
     const isGmailSyncRoute = location.pathname === '/app/gmail-sync';
+    const isVisionRoute = location.pathname === '/app/vision';
     const syncLabel = profile?.calendar_connected ? 'Synced' : 'Sync required';
 
     const navLinkClass = (active: boolean) =>
@@ -65,6 +66,13 @@ const AppSidebar = () => {
                     </div>
                 </nav>
 
+                <div className="mb-4">
+                    <Link to="/app/vision" className={navLinkClass(isVisionRoute)}>
+                        <Lightbulb className="h-4 w-4" />
+                        <span>Our Vision</span>
+                    </Link>
+                </div>
+
                 <div className="border-t border-white/10 px-3 pt-4">
                     <p className="truncate text-xs text-[#d5dee1]">{user?.email || profile?.username || 'Account'}</p>
                     <div className="mt-2 flex items-center gap-2">
@@ -102,7 +110,7 @@ const AppSidebar = () => {
                             </button>
 
                             {mobileMenuOpen && (
-                                <div className="absolute right-0 top-[calc(100%+0.5rem)] w-44 rounded-xl border border-white/15 bg-[#082733] p-1.5 shadow-xl">
+                                <div className="absolute right-0 top-[calc(100%+0.5rem)] w-48 rounded-xl border border-white/15 bg-[#082733] p-1.5 shadow-xl">
                                     <Link
                                         to="/app/gmail-sync"
                                         className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm ${
@@ -111,6 +119,15 @@ const AppSidebar = () => {
                                     >
                                         <Mail className="h-4 w-4" />
                                         <span>Gmail</span>
+                                    </Link>
+                                    <Link
+                                        to="/app/vision"
+                                        className={`mt-1 flex items-center gap-2 rounded-lg px-3 py-2 text-sm ${
+                                            isVisionRoute ? 'bg-[#1D546D] text-white' : 'text-[#d5dee1] hover:bg-[#1D546D]/55 hover:text-white'
+                                        }`}
+                                    >
+                                        <Lightbulb className="h-4 w-4" />
+                                        <span>Our Vision</span>
                                     </Link>
                                     <button
                                         type="button"

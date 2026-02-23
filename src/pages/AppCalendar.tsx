@@ -13,11 +13,12 @@ interface CalendarEvent {
 }
 
 const AppCalendar = () => {
-    const { profile } = useAuth();
+    const { profile, refresh } = useAuth();
     const [events, setEvents] = useState<CalendarEvent[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [syncingCalendar, setSyncingCalendar] = useState(false);
+    const [disconnectingCalendar, setDisconnectingCalendar] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [lastUpdatedAt, setLastUpdatedAt] = useState<Date | null>(null);
 
@@ -67,6 +68,24 @@ const AppCalendar = () => {
         } catch (err: any) {
             setError(err?.response?.data?.detail || 'Could not start calendar sync.');
             setSyncingCalendar(false);
+        }
+    };
+
+    const disconnectCalendar = async () => {
+        if (disconnectingCalendar) {
+            return;
+        }
+        setDisconnectingCalendar(true);
+        setError(null);
+        try {
+            await apiClient.post('/mvp/oauth/disconnect');
+            await refresh();
+            setEvents([]);
+            setLastUpdatedAt(null);
+        } catch (err: any) {
+            setError(err?.response?.data?.detail || 'Could not disconnect Google Calendar.');
+        } finally {
+            setDisconnectingCalendar(false);
         }
     };
 
@@ -136,15 +155,29 @@ const AppCalendar = () => {
                             <span className={`h-2.5 w-2.5 rounded-full ${calendarConnected ? 'bg-emerald-500' : 'bg-red-500'}`} />
                             <p className="text-sm font-semibold text-[#09343a]">{calendarConnected ? 'Calendar synced' : 'Calendar not synced'}</p>
                         </div>
-                        <button
-                            onClick={connectCalendar}
-                            disabled={syncingCalendar}
-                            className="rounded-lg border border-[#0a4f56]/20 px-3 py-2 text-sm text-[#0a4f56] disabled:opacity-60"
-                        >
-                            {syncingCalendar ? 'Connecting...' : calendarConnected ? 'Reconnect calendar' : 'Connect Google Calendar'}
-                        </button>
+                        <div className="flex flex-wrap items-center gap-2">
+                            <button
+                                onClick={connectCalendar}
+                                disabled={syncingCalendar}
+                                className="rounded-lg border border-[#0a4f56]/20 px-3 py-2 text-sm text-[#0a4f56] disabled:opacity-60"
+                            >
+                                {syncingCalendar ? 'Connecting...' : calendarConnected ? 'Reconnect calendar' : 'Connect Google Calendar'}
+                            </button>
+                            {calendarConnected && (
+                                <button
+                                    onClick={disconnectCalendar}
+                                    disabled={disconnectingCalendar}
+                                    className="rounded-lg border border-[#a83f3f]/30 px-3 py-2 text-sm text-[#a83f3f] disabled:opacity-60"
+                                >
+                                    {disconnectingCalendar ? 'Disconnecting...' : 'Disconnect'}
+                                </button>
+                            )}
+                        </div>
                     </div>
                     {!calendarConnected && <p className="mt-2 text-sm text-[#33585d]">Connect Google Calendar to show upcoming events.</p>}
+                    <p className="mt-2 text-xs text-[#5c7b80]">
+                        By connecting, you allow Orca to read and create calendar events needed for scheduling. You can disconnect any time.
+                    </p>
                 </section>
 
                 {error && (

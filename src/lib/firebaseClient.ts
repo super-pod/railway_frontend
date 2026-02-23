@@ -15,8 +15,7 @@ export const auth = getAuth(app);
 
 const loginProvider = new GoogleAuthProvider();
 const calendarProvider = new GoogleAuthProvider();
-calendarProvider.addScope('https://www.googleapis.com/auth/calendar.readonly');
-calendarProvider.addScope('https://www.googleapis.com/auth/calendar');
+calendarProvider.addScope('https://www.googleapis.com/auth/calendar.events');
 
 
 export const signInWithGoogle = async () => {

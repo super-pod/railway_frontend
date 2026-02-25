@@ -22,22 +22,14 @@ const Privacy = () => (
                     meeting creation. We do not use this data for any other purpose.
                 </p>
                 <p>
-                    Orca does not sell, rent, or share Google user data with third parties except as described in this policy. We do not use Google user data for serving advertisements.
+                    Orca does not sell, rent, or share Google user data with third parties. Data is used solely for providing and improving Orca's functionality. We do not use Google user data for serving advertisements.
                 </p>
             </section>
 
             <section className="space-y-2">
                 <h2 className="text-base font-semibold text-[#09343a]">Data Sharing and Transfers</h2>
                 <p>
-                    Orca may share Google user data only in the following limited circumstances:
-                </p>
-                <ul className="ml-5 list-disc space-y-1">
-                    <li>With infrastructure and AI model providers who process data on our behalf to operate requested product features. These service providers are contractually obligated to handle data securely and are prohibited from using it for their own purposes.</li>
-                    <li>When required by law, regulation, legal process, or enforceable governmental request.</li>
-                    <li>To protect against harm to the rights, property, or safety of Orca, our users, or the public as required or permitted by law.</li>
-                </ul>
-                <p>
-                    Any transfer of Google user data to third parties complies with the Google API Services User Data Policy, including the Limited Use requirements.
+                    We do not sell, share, or transfer your Google user data to third parties.
                 </p>
             </section>
 
